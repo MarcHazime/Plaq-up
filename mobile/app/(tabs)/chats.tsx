@@ -77,7 +77,7 @@ export default function Chats() {
 
             <FlatList
                 data={filteredChats}
-                keyExtractor={(item) => `${item.id}_${item.relatedPlate}`}
+                keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />

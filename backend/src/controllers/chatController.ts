@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { buildConversations } from '../domain/conversations';
 
 const prisma = new PrismaClient();
 
@@ -58,15 +59,11 @@ export const getUserChats = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
     try {
-        // Fetch current user's vehicles to determine "My Scope"
         const myVehicles = await prisma.vehicle.findMany({
             where: { userId },
             select: { plate: true, isPrimary: true }
         });
-        const myVehiclePlates = new Set(myVehicles.map(v => v.plate));
-        const myPrimary = myVehicles.find(v => v.isPrimary)?.plate || myVehicles[0]?.plate || 'Unknown';
 
-        // Fetch all messages involving the user
         const messages = await prisma.message.findMany({
             where: {
                 OR: [
@@ -93,55 +90,7 @@ export const getUserChats = async (req: Request, res: Response) => {
             }
         });
 
-        // Group by conversation
-        const conversations = new Map();
-
-        for (const msg of messages) {
-            const isSender = msg.senderId === userId;
-            const partner = isSender ? msg.receiver : msg.sender;
-            const plate = msg.relatedPlate || 'Unknown';
-            // Group by User only to avoid duplicates
-            const key = partner.id;
-
-            if (!conversations.has(key)) {
-                // Determine My Scope (Which of my plates is this about?)
-                // If the subject is one of my plates -> That's the scope.
-                // If the subject is THEIR plate -> I am using my Primary.
-                const myScope = myVehiclePlates.has(plate) ? plate : myPrimary;
-
-                // Determine Other Display (What plate title to show for them?)
-                // If the subject is THEIR plate -> Show that.
-                // If the subject is MY plate -> Show their Primary.
-
-                // Check if plate belongs to me
-                const isMyPlate = myVehiclePlates.has(plate);
-                const partnerPrimary = partner.vehicles[0]?.plate || 'Inconnu';
-
-                // If subject is my plate -> Show partner's primary
-                // If subject is NOT my plate (so it's theirs) -> Show subject
-                const otherDisplay = isMyPlate ? partnerPrimary : plate;
-
-                conversations.set(key, {
-                    id: partner.id,
-                    partnerId: partner.id,
-                    email: partner.email,
-                    relatedPlate: plate, // Keep atomic context
-                    lastMessage: msg.content,
-                    timestamp: msg.createdAt,
-                    myScope, // Frontend will use this to group in tabs
-                    otherDisplay, // Frontend will use this as Title
-                    unreadCount: 0 // Initialize
-                });
-            }
-
-            // Increment unread count if message is received, not read, and not deleted
-            if (!isSender && !msg.isRead && !msg.deletedByReceiver) {
-                const conv = conversations.get(key);
-                conv.unreadCount += 1;
-            }
-        }
-
-        res.json(Array.from(conversations.values()));
+        res.json(buildConversations(userId, messages, myVehicles));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
