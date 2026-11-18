@@ -2,14 +2,15 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../services/emailService';
+import * as Plate from '../domain/plate';
 
 const prisma = new PrismaClient();
-const PLATE_REGEX = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/;
 
 export const register = async (req: Request, res: Response) => {
-    const { plate, password, email } = req.body;
+    const { password, email } = req.body;
+    const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;
 
-    if (!plate || !PLATE_REGEX.test(plate)) {
+    if (!plate) {
         return res.status(400).json({ error: 'Format de plaque invalide (ex: AA-123-BB)' });
     }
 
@@ -133,7 +134,12 @@ export const verifyEmail = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
-    const { plate, password } = req.body;
+    const { password } = req.body;
+    const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;
+
+    if (!plate) {
+        return res.status(401).json({ error: 'Identifiants invalides' });
+    }
 
     try {
         // Find vehicle first to get user

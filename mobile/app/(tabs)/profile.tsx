@@ -6,6 +6,7 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 import { formatPlate } from '../../utils/formatting';
+import * as Plate from '../../utils/plate';
 
 export default function Profile() {
     const { user, signIn, signOut } = useAuth();
@@ -36,8 +37,7 @@ export default function Profile() {
 
     const handleAddVehicle = async () => {
         if (!user || !newPlate) return;
-        const PLATE_REGEX = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/;
-        if (!PLATE_REGEX.test(newPlate)) {
+        if (!Plate.isValid(newPlate)) {
             Alert.alert('Erreur', 'Format de plaque invalide (ex: AA-123-BB)');
             return;
         }

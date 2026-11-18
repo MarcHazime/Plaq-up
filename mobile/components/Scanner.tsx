@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Platform, AppState, AppStateS
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Plate from '../utils/plate';
 import { Worklets } from 'react-native-worklets-core';
 
 // Remove the import from the library causing issues
@@ -43,22 +44,10 @@ const RealScanner = ({ onScan, onClose }: ScannerProps) => {
 
     // Strict validator for French SIV plates (AA-123-AA)
     const processResult = useCallback((rawText: string) => {
-        const lines = rawText.split('\n');
-
-        for (const line of lines) {
-            const cleanLine = line.toUpperCase().trim();
-            const pure = cleanLine.replace(/[^A-Z0-9]/g, '');
-
-            if (pure.length === 7) {
-                const sivRegex = /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/;
-                if (sivRegex.test(pure)) {
-                    const formatted = `${pure.substring(0, 2)}-${pure.substring(2, 5)}-${pure.substring(5, 7)}`;
-
-                    // AUTO-SCAN Mode (Restored with Calibration)
-                    onScan(formatted);
-                    return;
-                }
-            }
+        const plate = Plate.fromOcr(rawText);
+        if (plate) {
+            // AUTO-SCAN Mode
+            onScan(plate);
         }
     }, [onScan]);
 

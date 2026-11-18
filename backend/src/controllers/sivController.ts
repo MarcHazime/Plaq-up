@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getVehicleDetails } from '../services/sivService';
 import { extractPlateFromImage } from '../services/ocrService';
 import { PrismaClient } from '@prisma/client';
+import * as Plate from '../domain/plate';
 
 const prisma = new PrismaClient();
 
@@ -50,7 +51,7 @@ export const scanPlate = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const getVehicleInfo = async (req: Request, res: Response): Promise<void> => {
-    const { plate } = req.params;
+    const plate = Plate.parse(req.params.plate ?? '');
 
     if (!plate) {
         res.status(400).json({ error: 'Plaque requise' });

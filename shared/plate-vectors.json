@@ -1,0 +1,57 @@
+{
+  "_doc": "Test vectors for the Plate module. Consumed by backend/src/domain/plate.test.ts and mobile/utils/plate.test.ts. Keep both copies of the module in sync with these.",
+  "valid": [
+    { "input": "AB-123-CD", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "ab-123-cd", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "AB 123 CD", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "ab 123 cd", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "AB123CD", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "ab123cd", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "  AB-123-CD  ", "normalized": "AB123CD", "parsed": "AB-123-CD" },
+    { "input": "AB.123.CD", "normalized": "AB123CD", "parsed": "AB-123-CD" }
+  ],
+  "invalid": [
+    "",
+    "   ",
+    "A",
+    "AB-12-CD",
+    "AB-1234-CD",
+    "A1-123-CD",
+    "AB-123-C1",
+    "123-AB-CD",
+    "1234 AB 56",
+    "AB-123-CDE",
+    "ABC-123-CD",
+    "AB-123",
+    "AB--123--CD-EF"
+  ],
+  "format": [
+    { "input": "", "expected": "" },
+    { "input": "a", "expected": "A" },
+    { "input": "ab", "expected": "AB" },
+    { "input": "ab1", "expected": "AB-1" },
+    { "input": "ab123", "expected": "AB-123" },
+    { "input": "ab123c", "expected": "AB-123-C" },
+    { "input": "ab 123 cd", "expected": "AB-123-CD" },
+    { "input": "AB-123-CD", "expected": "AB-123-CD" },
+    { "input": "ab123cdxyz", "expected": "AB-123-CD" }
+  ],
+  "ocr": [
+    { "text": "AB-123-CD", "expected": "AB-123-CD" },
+    { "text": "ab 123 cd", "expected": "AB-123-CD" },
+    { "text": "AB123CD", "expected": "AB-123-CD" },
+    { "text": "F | AB-123-CD |", "expected": "AB-123-CD" },
+    { "text": "garbage\n[AB.123.CD]\nmore", "expected": "AB-123-CD" },
+    { "text": "REPUBLIQUE\nFRANCAISE\nAB 123 CD\nXY-999-ZZ", "expected": "AB-123-CD" },
+    { "text": "AB\n123\nCD", "expected": null },
+    { "text": "XAB123CDX", "expected": null },
+    { "text": "1234 AB 56", "expected": null },
+    { "text": "", "expected": null },
+    { "text": "hello world", "expected": null }
+  ],
+  "url": [
+    { "input": "AB-123-CD", "expected": "AB123CD" },
+    { "input": "ab 123 cd", "expected": "AB123CD" },
+    { "input": "a/b?#", "expected": "AB" }
+  ]
+}

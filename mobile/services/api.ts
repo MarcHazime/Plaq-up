@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import * as Plate from '../utils/plate';
 import { Platform } from 'react-native';
 
 const getBaseUrl = () => {
@@ -87,7 +88,7 @@ export const api = {
     },
 
     async searchUser(plate: string) {
-        const response = await fetch(`${BASE_URL}/users/search?plate=${plate}`);
+        const response = await fetch(`${BASE_URL}/users/search?plate=${Plate.forUrl(plate)}`);
         if (!response.ok) {
             if (response.status === 404) return null;
             const error = await response.json();
@@ -99,7 +100,7 @@ export const api = {
     async getChatHistory(userId1: string, userId2: string, relatedPlate?: string) {
         let url = `${BASE_URL}/chats/history/${userId1}/${userId2}`;
         if (relatedPlate) {
-            url += `?relatedPlate=${relatedPlate}`;
+            url += `?relatedPlate=${Plate.forUrl(relatedPlate)}`;
         }
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch history');
@@ -206,7 +207,7 @@ export const api = {
     },
 
     async getVehicleInfo(plate: string) {
-        const response = await fetch(`${BASE_URL}/siv/${plate}`);
+        const response = await fetch(`${BASE_URL}/siv/${Plate.forUrl(plate)}`);
         if (!response.ok) {
             throw new Error('Failed to fetch vehicle info');
         }

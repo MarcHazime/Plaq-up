@@ -1,14 +1,20 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import * as Plate from '../domain/plate';
 
 const prisma = new PrismaClient();
 
 export const searchUser = async (req: Request, res: Response) => {
-    const { plate } = req.query;
+    const { plate: rawPlate } = req.query;
 
-    if (!plate || typeof plate !== 'string') {
+    if (!rawPlate || typeof rawPlate !== 'string') {
         return res.status(400).json({ error: 'Plate query parameter is required' });
+    }
+
+    const plate = Plate.parse(rawPlate);
+    if (!plate) {
+        return res.status(400).json({ error: 'Format de plaque invalide' });
     }
 
     try {
@@ -96,10 +102,9 @@ export const getVehicles = async (req: Request, res: Response) => {
 
 export const addVehicle = async (req: Request, res: Response) => {
     const { userId } = req.params;
-    const { plate } = req.body;
-    const PLATE_REGEX = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/;
+    const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;
 
-    if (!plate || !PLATE_REGEX.test(plate)) {
+    if (!plate) {
         return res.status(400).json({ error: 'Format de plaque invalide' });
     }
 
