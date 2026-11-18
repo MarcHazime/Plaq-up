@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import * as Plate from '../utils/plate';
 import { Platform } from 'react-native';
+import { getAuthToken, notifyUnauthorized } from './authToken';
 
 const getBaseUrl = () => {
     if (__DEV__) {
@@ -21,9 +22,17 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+const authFetch = async (url: string, init: RequestInit = {}) => {
+    const token = getAuthToken();
+    const headers = { ...(init.headers as Record<string, string>), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    const response = await fetch(url, { ...init, headers });
+    if (response.status === 401) notifyUnauthorized();
+    return response;
+};
+
 export const api = {
     async register(plate: string, password: string, email: string) {
-        const response = await fetch(`${BASE_URL}/auth/register`, {
+        const response = await authFetch(`${BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plate, password, email }),
@@ -36,7 +45,7 @@ export const api = {
     },
 
     async verifyEmail(userId: string, code: string) {
-        const response = await fetch(`${BASE_URL}/auth/verify`, {
+        const response = await authFetch(`${BASE_URL}/auth/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, code }),
@@ -49,7 +58,7 @@ export const api = {
     },
 
     async login(plate: string, password: string) {
-        const response = await fetch(`${BASE_URL}/auth/login`, {
+        const response = await authFetch(`${BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plate, password }),
@@ -62,7 +71,7 @@ export const api = {
     },
 
     async forgotPassword(email: string) {
-        const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
+        const response = await authFetch(`${BASE_URL}/auth/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
@@ -75,7 +84,7 @@ export const api = {
     },
 
     async resetPassword(email: string, code: string, newPassword: string) {
-        const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+        const response = await authFetch(`${BASE_URL}/auth/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, code, newPassword }),
@@ -87,28 +96,18 @@ export const api = {
         return response.json();
     },
 
-    async searchUser(plate: string) {
-        const response = await fetch(`${BASE_URL}/users/search?plate=${Plate.forUrl(plate)}`);
-        if (!response.ok) {
-            if (response.status === 404) return null;
-            const error = await response.json();
-            throw new Error(error.error || 'Search failed');
-        }
-        return response.json();
-    },
-
     async getChatHistory(userId1: string, userId2: string, relatedPlate?: string) {
         let url = `${BASE_URL}/chats/history/${userId1}/${userId2}`;
         if (relatedPlate) {
             url += `?relatedPlate=${Plate.forUrl(relatedPlate)}`;
         }
-        const response = await fetch(url);
+        const response = await authFetch(url);
         if (!response.ok) throw new Error('Failed to fetch history');
         return response.json();
     },
 
     async getUserChats(userId: string) {
-        const response = await fetch(`${BASE_URL}/chats/list/${userId}`);
+        const response = await authFetch(`${BASE_URL}/chats/list/${userId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch user chats');
         }
@@ -116,7 +115,7 @@ export const api = {
     },
 
     async getUserById(userId: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}`);
+        const response = await authFetch(`${BASE_URL}/users/${userId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch user');
         }
@@ -124,7 +123,7 @@ export const api = {
     },
 
     async updateUser(userId: string, data: { plate?: string; email?: string; password?: string }) {
-        const response = await fetch(`${BASE_URL}/users/${userId}`, {
+        const response = await authFetch(`${BASE_URL}/users/${userId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -137,7 +136,7 @@ export const api = {
     },
 
     async deleteUser(userId: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}`, {
+        const response = await authFetch(`${BASE_URL}/users/${userId}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -148,7 +147,7 @@ export const api = {
     },
 
     async blockUser(blockerId: string, blockedId: string) {
-        const response = await fetch(`${BASE_URL}/users/block`, {
+        const response = await authFetch(`${BASE_URL}/users/block`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ blockerId, blockedId }),
@@ -157,7 +156,7 @@ export const api = {
     },
 
     async unblockUser(blockerId: string, blockedId: string) {
-        const response = await fetch(`${BASE_URL}/users/unblock`, {
+        const response = await authFetch(`${BASE_URL}/users/unblock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ blockerId, blockedId }),
@@ -166,19 +165,19 @@ export const api = {
     },
 
     async getBlockStatus(userId: string, otherId: string) {
-        const response = await fetch(`${BASE_URL}/users/relationship/${userId}/${otherId}`);
+        const response = await authFetch(`${BASE_URL}/users/relationship/${userId}/${otherId}`);
         if (!response.ok) throw new Error('Failed to fetch block status');
         return response.json();
     },
 
     async getBlockedUsers(userId: string) {
-        const response = await fetch(`${BASE_URL}/users/blocked/${userId}`);
+        const response = await authFetch(`${BASE_URL}/users/blocked/${userId}`);
         if (!response.ok) throw new Error('Failed to fetch blocked users');
         return response.json();
     },
 
     async deleteConversation(userId: string, partnerId: string) {
-        const response = await fetch(`${BASE_URL}/chats/${userId}/${partnerId}`, {
+        const response = await authFetch(`${BASE_URL}/chats/${userId}/${partnerId}`, {
             method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete conversation');
@@ -186,7 +185,7 @@ export const api = {
     },
 
     async markMessagesAsRead(userId: string, partnerId: string) {
-        const response = await fetch(`${BASE_URL}/chats/read/${userId}/${partnerId}`, {
+        const response = await authFetch(`${BASE_URL}/chats/read/${userId}/${partnerId}`, {
             method: 'PUT',
         });
         if (!response.ok) throw new Error('Failed to mark messages as read');
@@ -194,7 +193,7 @@ export const api = {
     },
 
     async updatePushToken(userId: string, pushToken: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}/push-token`, {
+        const response = await authFetch(`${BASE_URL}/users/${userId}/push-token`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pushToken }),
@@ -207,7 +206,7 @@ export const api = {
     },
 
     async getVehicleInfo(plate: string) {
-        const response = await fetch(`${BASE_URL}/siv/${Plate.forUrl(plate)}`);
+        const response = await authFetch(`${BASE_URL}/siv/${Plate.forUrl(plate)}`);
         if (!response.ok) {
             throw new Error('Failed to fetch vehicle info');
         }
@@ -216,7 +215,7 @@ export const api = {
 
     async scanPlate(formData: FormData) {
         console.log('Scanning plate at:', `${BASE_URL}/siv/scan`);
-        const response = await fetch(`${BASE_URL}/siv/scan`, {
+        const response = await authFetch(`${BASE_URL}/siv/scan`, {
             method: 'POST',
             body: formData,
             // Do NOT set Content-Type header for FormData, let fetch handle it with boundary
@@ -229,7 +228,7 @@ export const api = {
     },
 
     async uploadImage(formData: FormData) {
-        const response = await fetch(`${BASE_URL}/chats/upload`, {
+        const response = await authFetch(`${BASE_URL}/chats/upload`, {
             method: 'POST',
             body: formData,
         });
@@ -249,13 +248,13 @@ export const api = {
     },
 
     async getVehicles(userId: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}/vehicles`);
+        const response = await authFetch(`${BASE_URL}/users/${userId}/vehicles`);
         if (!response.ok) throw new Error('Failed to fetch vehicles');
         return response.json();
     },
 
     async addVehicle(userId: string, plate: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}/vehicles`, {
+        const response = await authFetch(`${BASE_URL}/users/${userId}/vehicles`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plate }),
@@ -268,7 +267,7 @@ export const api = {
     },
 
     async deleteVehicle(userId: string, vehicleId: string) {
-        const response = await fetch(`${BASE_URL}/users/${userId}/vehicles/${vehicleId}`, {
+        const response = await authFetch(`${BASE_URL}/users/${userId}/vehicles/${vehicleId}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

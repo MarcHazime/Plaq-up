@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
 import { api } from '../services/api';
+import { setAuthToken, setUnauthorizedHandler } from '../services/authToken';
 
 type User = {
     id: string;
@@ -11,6 +12,7 @@ type User = {
     email?: string;
     pushToken?: string;
     primaryPlate?: string;
+    token?: string;
 };
 
 type AuthContextType = {
@@ -45,7 +47,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const storedUser = await SecureStore.getItemAsync('user');
                 if (storedUser) {
-                    setUser(JSON.parse(storedUser));
+                    const parsed: User = JSON.parse(storedUser);
+                    // Sessions saved before tokens existed must sign in again.
+                    if (parsed.token) {
+                        setAuthToken(parsed.token);
+                        setUser(parsed);
+                    } else {
+                        await SecureStore.deleteItemAsync('user');
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load session:', error);
@@ -61,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!userData.plate && userData.primaryPlate) {
             userData.plate = userData.primaryPlate;
         }
+        setAuthToken(userData.token ?? null);
         setUser(userData);
         if (Platform.OS !== 'web') {
             SecureStore.setItemAsync('user', JSON.stringify(userData)).catch(console.error);
@@ -80,12 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signOut = () => {
+        setAuthToken(null);
         setUser(null);
         if (Platform.OS !== 'web') {
             SecureStore.deleteItemAsync('user').catch(console.error);
         }
         router.replace('/(auth)/login');
     };
+
+    useEffect(() => {
+        setUnauthorizedHandler(signOut);
+        return () => setUnauthorizedHandler(null);
+    });
 
     useEffect(() => {
         if (isLoading) return;

@@ -32,6 +32,7 @@ export default function VerifyEmail() {
             // Let's assume signIn takes { id, plate, email }
             signIn({
                 id: response.userId,
+                token: response.token,
                 plate: response.plate,
                 email: response.email
             });

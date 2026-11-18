@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { Platform } from 'react-native';
 
 import Constants from 'expo-constants';
+import { getAuthToken } from './authToken';
 
 const getBaseUrl = () => {
     if (__DEV__) {
@@ -22,4 +23,5 @@ const getBaseUrl = () => {
 
 export const socket: Socket = io(getBaseUrl(), {
     autoConnect: false,
+    auth: (cb) => cb({ token: getAuthToken() }),
 });

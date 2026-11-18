@@ -19,7 +19,7 @@ export default function Login() {
             setError('');
             const response = await api.login(plate, password);
             console.log('Login success:', response);
-            signIn({ id: response.userId, plate: response.plate });
+            signIn({ id: response.userId, plate: response.primaryPlate, token: response.token });
         } catch (err: any) {
             setError(err.message);
         }

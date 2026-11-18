@@ -142,17 +142,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
     },
-    header: {
-        padding: SPACING.l,
-        backgroundColor: COLORS.surface,
-        ...SHADOWS.small,
-        zIndex: 1,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: COLORS.text,
-    },
     tabsContainer: {
         backgroundColor: COLORS.surface,
         borderBottomWidth: 1,
@@ -217,12 +206,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: COLORS.text,
         marginBottom: 2,
-    },
-    contextLabel: {
-        fontSize: 12,
-        color: COLORS.primary,
-        marginBottom: 2,
-        fontWeight: '500',
     },
     subtitle: {
         fontSize: 14,

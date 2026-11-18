@@ -14,12 +14,15 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-const router = Router();
+import { requireAuth, requireSelf, requireParty } from '../auth/middleware';
 
-router.get('/history/:userId1/:userId2', getChatHistory);
-router.get('/list/:userId', getUserChats);
+const router = Router();
+router.use(requireAuth);
+
+router.get('/history/:userId1/:userId2', requireParty('userId1', 'userId2'), getChatHistory);
+router.get('/list/:userId', requireSelf('userId'), getUserChats);
 router.post('/upload', upload.single('image'), uploadImage);
-router.delete('/:userId/:partnerId', deleteConversation);
-router.put('/read/:userId/:partnerId', markMessagesAsRead);
+router.delete('/:userId/:partnerId', requireSelf('userId'), deleteConversation);
+router.put('/read/:userId/:partnerId', requireSelf('userId'), markMessagesAsRead);
 
 export default router;

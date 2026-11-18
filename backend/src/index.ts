@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+import { assertAuthConfigured } from './auth/token';
+assertAuthConfigured();
+
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
@@ -60,15 +63,6 @@ app.use('/api/siv', sivRoutes); // Register SIV routes
 
 app.get('/', (req, res) => {
     res.send('License Plate App API is running');
-});
-
-// Socket.io connection handler
-io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-    });
 });
 
 const PORT = process.env.PORT || 3000;

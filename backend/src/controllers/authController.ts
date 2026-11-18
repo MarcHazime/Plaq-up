@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../services/emailService';
 import * as Plate from '../domain/plate';
+import { signToken } from '../auth/token';
 
 const prisma = new PrismaClient();
 
@@ -124,6 +125,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
         res.json({
             message: 'Compte vérifié avec succès',
             userId: updatedUser.id,
+            token: signToken(updatedUser.id),
             email: updatedUser.email
         });
 
@@ -166,6 +168,7 @@ export const login = async (req: Request, res: Response) => {
         res.json({
             message: 'Connexion réussie',
             userId: user.id,
+            token: signToken(user.id),
             email: user.email,
             primaryPlate: vehicle.plate // The plate they logged in with implies context
         });

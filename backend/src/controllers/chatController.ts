@@ -6,7 +6,6 @@ const prisma = new PrismaClient();
 
 export const getChatHistory = async (req: Request, res: Response) => {
     const { userId1, userId2 } = req.params;
-    const { relatedPlate } = req.query;
 
     try {
         const whereClause: any = {
@@ -15,10 +14,6 @@ export const getChatHistory = async (req: Request, res: Response) => {
                 { senderId: userId2, receiverId: userId1, deletedByReceiver: false }
             ]
         };
-
-        // if (relatedPlate) {
-        //     whereClause.relatedPlate = relatedPlate;
-        // }
 
         const finalMessages = await prisma.message.findMany({
             where: whereClause,
