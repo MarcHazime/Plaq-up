@@ -18,7 +18,7 @@ const getBaseUrl = () => {
         return `http://${localhost}:3000`;
     }
 
-    return 'https://vigiplaques-production.up.railway.app';
+    return 'https://plaqu-up-production.up.railway.app';
 };
 
 export const socket: Socket = io(getBaseUrl(), {

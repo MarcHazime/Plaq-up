@@ -17,7 +17,7 @@ const getBaseUrl = () => {
         return `http://${localhost}:3000/api`;
     }
 
-    return 'https://vigiplaques-production.up.railway.app/api';
+    return 'https://plaqu-up-production.up.railway.app/api';
 };
 
 const BASE_URL = getBaseUrl();
