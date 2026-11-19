@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+import { initMonitoring, Sentry } from './monitoring';
+initMonitoring();
+
 import { assertAuthConfigured } from './auth/token';
 assertAuthConfigured();
 import { assertAccountConfigured } from './account';
@@ -66,6 +69,9 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')))
 app.get('/', (req, res) => {
     res.send('License Plate App API is running');
 });
+
+// After all routes: reports unhandled errors (no-op when Sentry is not configured).
+Sentry.setupExpressErrorHandler(app);
 
 const PORT = process.env.PORT || 3000;
 

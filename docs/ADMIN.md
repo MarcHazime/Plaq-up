@@ -38,3 +38,25 @@ Une image jamais envoyée dans un message est supprimée du bucket après 24 h, 
 Au démarrage, le serveur applique le schéma avec `prisma db push`. Si Prisma estime qu'un changement peut perdre des données (par exemple une contrainte d'unicité ajoutée), il refuse et le déploiement plante. Lisez l'avertissement : s'il porte sur une colonne neuve, sans doublon possible, il est sans danger.
 
 Pour l'accepter une seule fois : ajoutez dans les variables du service backend `PRISMA_PUSH_FLAGS` = `--accept-data-loss`, laissez Railway redéployer, puis **supprimez la variable**. Elle n'est volontairement pas permanente, pour qu'une vraie suppression de colonne ne passe jamais sans que vous le décidiez.
+
+## Suivi des erreurs (Sentry)
+
+Sentry est optionnel : sans DSN, rien n'est envoyé.
+
+1. Créer un compte sur sentry.io (offre gratuite), puis deux projets : un **Node.js** (backend) et un **React Native** (app).
+2. Backend : variable Railway `SENTRY_DSN` = le DSN du projet Node. Les requêtes (corps, cookies, en-têtes d'authentification, adresses IP) sont retirées avant envoi.
+3. App : variable `EXPO_PUBLIC_SENTRY_DSN` = le DSN du projet React Native, à définir pour EAS (`npx eas-cli env:create --name EXPO_PUBLIC_SENTRY_DSN --value <dsn> --environment preview --visibility plaintext`, puis `production`). Le DSN n'est pas un secret, il est lisible dans l'app. Il faut un nouveau build.
+4. Dans Sentry, régler une alerte email « nouvelle erreur » sur chaque projet.
+
+Les cartes de sources (lisibilité des traces de l'app) ne sont pas envoyées pour l'instant (`SENTRY_DISABLE_AUTO_UPLOAD`).
+
+## Sauvegardes de la base
+
+- Railway : service **Postgres** → onglet **Backups** → planifier des sauvegardes quotidiennes (selon l'offre Railway, cette fonction peut exiger un plan payant : à vérifier à l'écran).
+- Sauvegarde manuelle, à garder hors de Railway (URL publique de la base dans les variables du service Postgres) :
+
+```bash
+pg_dump "$DATABASE_PUBLIC_URL" --format=custom --file=plaqup-$(date +%F).dump
+```
+
+- Restauration : `pg_restore --clean --no-owner -d "$URL_CIBLE" plaqup-AAAA-MM-JJ.dump`. Essayer une fois sur une base jetable avant d'en avoir besoin.
