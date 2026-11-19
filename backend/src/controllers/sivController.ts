@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { getVehicleDetails } from '../services/sivService';
 import { extractPlateFromImage } from '../services/ocrService';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import * as Plate from '../domain/plate';
 
-const prisma = new PrismaClient();
 
 interface MulterRequest extends Request {
     file?: Express.Multer.File;

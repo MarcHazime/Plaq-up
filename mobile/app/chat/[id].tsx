@@ -87,12 +87,22 @@ export default function Chat() {
         });
 
         socket.on('message_error', (data) => {
-            console.log("Message error: ", data.error);
+            // The optimistic message was refused: take it back and tell the user why.
+            if (data.tempId) setMessages((prev) => prev.filter(m => m.tempId !== data.tempId));
+            Alert.alert("Message non envoyé", data.error || "Une erreur est survenue");
+        });
+
+        socket.on('quota_warning', (quota: { used: number; limit: number; level: string }) => {
+            Alert.alert(
+                quota.level === 'reached' ? "Limite atteinte" : "Bientôt la limite",
+                `Vous avez utilisé ${quota.used} conversations sur ${quota.limit}.`
+            );
         });
 
         return () => {
             socket.off('receive_message');
             socket.off('message_error');
+            socket.off('quota_warning');
             socket.disconnect();
         };
     }, [id, user, relatedPlate]);

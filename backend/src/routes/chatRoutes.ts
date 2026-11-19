@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getChatHistory, getUserChats, uploadImage, deleteConversation, markMessagesAsRead } from '../controllers/chatController';
+import { getChatHistory, getUserChats, uploadImage, deleteConversation, markMessagesAsRead, getQuota } from '../controllers/chatController';
 import multer from 'multer';
 import path from 'path';
 
@@ -21,6 +21,7 @@ router.use(requireAuth);
 
 router.get('/history/:userId1/:userId2', requireParty('userId1', 'userId2'), getChatHistory);
 router.get('/list/:userId', requireSelf('userId'), getUserChats);
+router.get('/quota/:userId', requireSelf('userId'), getQuota);
 router.post('/upload', upload.single('image'), uploadImage);
 router.delete('/:userId/:partnerId', requireSelf('userId'), deleteConversation);
 router.put('/read/:userId/:partnerId', requireSelf('userId'), markMessagesAsRead);

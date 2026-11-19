@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import bcrypt from 'bcryptjs';
 import * as Plate from '../domain/plate';
 
-const prisma = new PrismaClient();
 
 export const searchUser = async (req: Request, res: Response) => {
     const { plate: rawPlate } = req.query;

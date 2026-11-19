@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../services/emailService';
 import * as Plate from '../domain/plate';
 import { signToken } from '../auth/token';
 
-const prisma = new PrismaClient();
 
 export const register = async (req: Request, res: Response) => {
     const { password, email } = req.body;
