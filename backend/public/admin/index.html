@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Plaq'Up – Administration</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header>
+    <h1>Plaq'Up <span>administration</span></h1>
+    <button id="logout" hidden>Se déconnecter</button>
+  </header>
+
+  <main>
+    <section id="login">
+      <h2>Connexion</h2>
+      <form id="login-form">
+        <label>Plaque <input id="plate" autocomplete="username" placeholder="AA-123-BB" required></label>
+        <label>Mot de passe <input id="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Se connecter</button>
+        <p id="login-error" class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="app" hidden>
+      <div id="stats" class="stats"></div>
+
+      <nav>
+        <button data-tab="reports" class="active">Signalements</button>
+        <button data-tab="users">Utilisateurs</button>
+      </nav>
+
+      <div id="tab-reports">
+        <div class="toolbar">
+          <label>Afficher
+            <select id="report-status">
+              <option value="open">À traiter</option>
+              <option value="suspended">Suspensions</option>
+              <option value="dismissed">Classés</option>
+              <option value="all">Tous</option>
+            </select>
+          </label>
+          <button id="refresh">Actualiser</button>
+        </div>
+        <div id="reports"></div>
+      </div>
+
+      <div id="tab-users" hidden>
+        <form id="user-search" class="toolbar">
+          <input id="user-query" placeholder="Rechercher une plaque (ex: AB123)">
+          <button type="submit">Rechercher</button>
+        </form>
+        <div id="users"></div>
+      </div>
+
+      <p id="app-error" class="error" role="alert"></p>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

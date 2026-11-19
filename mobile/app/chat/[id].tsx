@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect, useRef } from 'react';
@@ -141,6 +141,23 @@ export default function Chat() {
                 { text: "Annuler", style: "cancel" }
             ]
         );
+    };
+
+    // Long-press on a message received from the partner.
+    const confirmReport = (messageId: string) => {
+        const send = async (reason: 'harassment' | 'spam' | 'other') => {
+            try {
+                await api.reportMessage(messageId, reason);
+                Alert.alert('Merci', "Votre signalement a été envoyé. Nous l'examinerons.");
+            } catch (error: any) {
+                Alert.alert('Erreur', error.message);
+            }
+        };
+        Alert.alert('Signaler ce message', 'Pour quelle raison ?', [
+            { text: 'Harcèlement, insultes', onPress: () => send('harassment') },
+            { text: 'Spam, publicité', onPress: () => send('spam') },
+            { text: 'Autre', onPress: () => send('other') },
+        ], { cancelable: true });
     };
 
     const handleBlock = async () => {
@@ -339,10 +356,14 @@ export default function Chat() {
                                     styles.messageWrapper,
                                     isMe ? styles.sentWrapper : styles.receivedWrapper
                                 ]}>
-                                    <View style={[
-                                        styles.message,
-                                        isMe ? styles.sent : styles.received
-                                    ]}>
+                                    <Pressable
+                                        style={[
+                                            styles.message,
+                                            isMe ? styles.sent : styles.received
+                                        ]}
+                                        onLongPress={() => !isMe && item.id && confirmReport(item.id)}
+                                        delayLongPress={400}
+                                    >
                                         {imageUrl && (
                                             <TouchableOpacity onPress={() => openImage(imageUrl)}>
                                                 <Image
@@ -364,7 +385,7 @@ export default function Chat() {
                                         ]}>
                                             {timeFormat(currentDate)}
                                         </Text>
-                                    </View>
+                                    </Pressable>
                                 </View>
                             </View>
                         );

@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { sendPushNotification } from './services/notificationService';
 import { authenticateSocket } from './auth/middleware';
 import { chatWith, DenyReason } from './chat';
+import { lookupAccount } from './auth';
 
 const DENIED: Record<DenyReason, string> = {
     empty: 'Message vide',
@@ -17,6 +18,11 @@ const DENIED: Record<DenyReason, string> = {
 
 export const setupSocket = (io: Server) => {
     io.use(authenticateSocket);
+    // A suspended account gets no live connection either.
+    io.use(async (socket, next) => {
+        const state = await lookupAccount(socket.data.userId).catch(() => null);
+        next(state && !state.suspended ? undefined : new Error('Accès refusé'));
+    });
 
     const chat = chatWith({
         async messageSent(message, receiver) {

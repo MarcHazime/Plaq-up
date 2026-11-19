@@ -2,10 +2,11 @@ import { Router } from 'express';
 import { updateUser, getUserById, deleteUser, updatePushToken, blockUser, unblockUser, getBlockedUsers, getBlockStatus } from '../controllers/userController';
 import * as UserController from '../controllers/userController'; // Assuming UserController is now imported as a whole object for new routes
 
+import { requireActive } from '../auth';
 import { requireAuth, requireSelf, requireSelfInBody } from '../auth/middleware';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, requireActive);
 
 router.get('/:userId/vehicles', requireSelf('userId'), UserController.getVehicles);
 router.post('/:userId/vehicles', requireSelf('userId'), UserController.addVehicle);

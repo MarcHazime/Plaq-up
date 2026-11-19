@@ -39,6 +39,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import chatRoutes from './routes/chatRoutes';
 import sivRoutes from './routes/sivRoutes';
+import { reportRoutes, adminRoutes } from './routes/moderationRoutes';
 
 // Security Middlewares
 app.use(helmet());
@@ -62,6 +63,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/siv', sivRoutes); // Register SIV routes
+app.use('/api/reports', reportRoutes);
+app.use('/api/admin', adminRoutes);
+// Administration page: static files, the data behind it needs an administrator token.
+app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 
 app.get('/', (req, res) => {
     res.send('License Plate App API is running');

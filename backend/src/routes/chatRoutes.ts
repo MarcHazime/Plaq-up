@@ -14,10 +14,11 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+import { requireActive } from '../auth';
 import { requireAuth, requireSelf, requireParty } from '../auth/middleware';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, requireActive);
 
 router.get('/history/:userId1/:userId2', requireParty('userId1', 'userId2'), getChatHistory);
 router.get('/list/:userId', requireSelf('userId'), getUserChats);

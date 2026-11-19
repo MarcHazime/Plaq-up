@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Plate from '../utils/plate';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { getAuthToken, notifyUnauthorized } from './authToken';
 
 const getBaseUrl = () => {
@@ -34,6 +34,14 @@ const authFetch = async (url: string, init: RequestInit = {}) => {
     const headers = { ...(init.headers as Record<string, string>), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
     const response = await fetch(url, { ...init, headers });
     if (response.status === 401) notifyUnauthorized();
+    if (response.status === 403) {
+        // A suspended account keeps a valid token: sign it out and say why.
+        const body = await response.clone().json().catch(() => null);
+        if (body?.code === 'ACCOUNT_SUSPENDED') {
+            notifyUnauthorized();
+            Alert.alert('Compte suspendu', 'Votre compte a été suspendu. Contactez contact@plaq-up.fr pour plus d\'informations.');
+        }
+    }
     return response;
 };
 
@@ -138,6 +146,19 @@ export const api = {
         const response = await authFetch(`${BASE_URL}/users/${userId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch user');
+        }
+        return response.json();
+    },
+
+    async reportMessage(messageId: string, reason: 'harassment' | 'spam' | 'inappropriate' | 'other') {
+        const response = await authFetch(`${BASE_URL}/reports`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId, reason }),
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Signalement impossible');
         }
         return response.json();
     },
