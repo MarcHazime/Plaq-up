@@ -32,3 +32,9 @@ Variables du service backend sur Railway : `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R
 Plafonds (fichier `backend/src/images/images.ts`) : 2 Mo par image, 20 envois par 24 h et par utilisateur, 8 Go au total, 500 000 envois par mois, 300 liens de lecture par heure et par utilisateur. Au-delà, l'envoi d'images est refusé, le texte continue de fonctionner.
 
 Une image jamais envoyée dans un message est supprimée du bucket après 24 h, ainsi que celles d'un compte supprimé.
+
+## Quand un déploiement plante sur « There might be data loss »
+
+Au démarrage, le serveur applique le schéma avec `prisma db push`. Si Prisma estime qu'un changement peut perdre des données (par exemple une contrainte d'unicité ajoutée), il refuse et le déploiement plante. Lisez l'avertissement : s'il porte sur une colonne neuve, sans doublon possible, il est sans danger.
+
+Pour l'accepter une seule fois : ajoutez dans les variables du service backend `PRISMA_PUSH_FLAGS` = `--accept-data-loss`, laissez Railway redéployer, puis **supprimez la variable**. Elle n'est volontairement pas permanente, pour qu'une vraie suppression de colonne ne passe jamais sans que vous le décidiez.

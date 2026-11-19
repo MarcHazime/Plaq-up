@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "npx prisma db push && node dist/index.js",
+    "start": "npx prisma db push $PRISMA_PUSH_FLAGS && node dist/index.js",
     "postinstall": "prisma generate",
     "test": "vitest run"
   },
