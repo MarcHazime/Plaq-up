@@ -135,6 +135,50 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 };
 
+export const resendVerification = async (req: Request, res: Response) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'ID utilisateur requis' });
+    }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Utilisateur introuvable' });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ error: 'Compte déjà vérifié' });
+        }
+
+        if (!user.email) {
+            return res.status(400).json({ error: 'Aucun email associé à ce compte' });
+        }
+
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                verificationToken: verificationCode,
+                verificationExpires: new Date(Date.now() + 24 * 3600 * 1000)
+            }
+        });
+
+        await sendEmail(
+            user.email,
+            "Plaq'Up - Votre nouveau code de vérification",
+            `Bonjour,\n\nVoici votre nouveau code de vérification :\n\n${verificationCode}\n\nCe code est valable 24 heures.\n\nL'équipe Plaq'Up`
+        );
+
+        res.json({ message: 'Un nouveau code a été envoyé.' });
+    } catch (error) {
+        console.error('Resend Verification Error:', error);
+        res.status(500).json({ error: "Impossible d'envoyer le code. Réessayez plus tard." });
+    }
+};
+
 export const login = async (req: Request, res: Response) => {
     const { password } = req.body;
     const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;

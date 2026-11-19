@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { Alert, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth';
@@ -14,6 +14,7 @@ export default function VerifyEmail() {
     const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
 
     const handleVerify = async () => {
         if (code.length < 6) {
@@ -41,6 +42,19 @@ export default function VerifyEmail() {
         } catch (err: any) {
             setError(err.message);
             setLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        setResending(true);
+        setError('');
+        try {
+            await api.resendVerification(params.userId);
+            Alert.alert('Code envoyé', `Un nouveau code a été envoyé à ${params.email}`);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setResending(false);
         }
     };
 
@@ -86,8 +100,8 @@ export default function VerifyEmail() {
                             </LinearGradient>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.resendButton} onPress={() => {/* Implement Resend */ }}>
-                            <Text style={styles.resendText}>Renvoyer le code</Text>
+                        <TouchableOpacity style={styles.resendButton} onPress={handleResend} disabled={resending}>
+                            <Text style={styles.resendText}>{resending ? 'Envoi...' : 'Renvoyer le code'}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

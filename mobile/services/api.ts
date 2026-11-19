@@ -57,6 +57,19 @@ export const api = {
         return response.json();
     },
 
+    async resendVerification(userId: string) {
+        const response = await authFetch(`${BASE_URL}/auth/resend-verification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Impossible d'envoyer le code");
+        }
+        return response.json();
+    },
+
     async login(plate: string, password: string) {
         const response = await authFetch(`${BASE_URL}/auth/login`, {
             method: 'POST',
