@@ -22,6 +22,13 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+/** An error answered by the server, with its machine-readable code and extra fields. */
+export class ApiError extends Error {
+    constructor(message: string, public code?: string, public data: Record<string, any> = {}) {
+        super(message);
+    }
+}
+
 const authFetch = async (url: string, init: RequestInit = {}) => {
     const token = getAuthToken();
     const headers = { ...(init.headers as Record<string, string>), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
@@ -78,7 +85,7 @@ export const api = {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Login failed');
+            throw new ApiError(error.error || 'Login failed', error.code, error);
         }
         return response.json();
     },
@@ -135,7 +142,13 @@ export const api = {
         return response.json();
     },
 
-    async updateUser(userId: string, data: { plate?: string; email?: string; password?: string }) {
+    async getSettings(userId: string): Promise<{ email: string | null; pseudo: string | null; acceptNewContacts: boolean }> {
+        const response = await authFetch(`${BASE_URL}/users/${userId}/settings`);
+        if (!response.ok) throw new Error('Failed to fetch settings');
+        return response.json();
+    },
+
+    async updateUser(userId: string, data: { pseudo?: string | null; acceptNewContacts?: boolean; currentPassword?: string; newPassword?: string }) {
         const response = await authFetch(`${BASE_URL}/users/${userId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },

@@ -7,8 +7,8 @@ const HOUR = 3600 * 1000;
 
 function setup(config: Partial<ChatConfig> = {}, userCount = 30) {
     const store = new MemoryChatStore();
-    store.addUser({ id: 'me', email: 'me@x.fr', plates: ['AA-111-AA'], pushToken: 'ExponentPushToken[me]' });
-    store.addUser({ id: 'bob', email: 'bob@x.fr', plates: ['BB-222-BB'], pushToken: 'ExponentPushToken[bob]' });
+    store.addUser({ id: 'me', plates: ['AA-111-AA'], pushToken: 'ExponentPushToken[me]' });
+    store.addUser({ id: 'bob', plates: ['BB-222-BB'], pushToken: 'ExponentPushToken[bob]' });
     for (let i = 0; i < userCount; i++) store.addUser({ id: `u${i}`, plates: [`ZZ-${100 + i}-ZZ`] });
 
     let current = new Date('2026-01-10T10:00:00Z');

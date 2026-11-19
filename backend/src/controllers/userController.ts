@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db';
-import bcrypt from 'bcryptjs';
+import { account, accountStore, displayName } from '../account';
+import { PSEUDO_MESSAGES } from '../account/pseudo';
 import * as Plate from '../domain/plate';
 
 
@@ -44,19 +45,26 @@ export const getUserById = async (req: Request, res: Response) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id },
-            select: { id: true, createdAt: true, vehicles: { select: { plate: true, isPrimary: true } } }
+            select: { id: true, createdAt: true, pseudo: true, vehicles: { where: { isPrimary: true }, select: { plate: true } } }
         });
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const userWithPlate = {
-            ...user,
-            plate: user.vehicles.find(v => v.isPrimary)?.plate || user.vehicles[0]?.plate || 'Inconnu'
-        };
+        // What other Users may see: the pseudo if set, otherwise the primary Plate. Never the email or the other plates.
+        res.json({ id: user.id, createdAt: user.createdAt, displayName: displayName(user.pseudo, user.vehicles[0]?.plate) });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
-        res.json(userWithPlate);
+export const getSettings = async (req: Request, res: Response) => {
+    try {
+        const user = await accountStore.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+        res.json({ email: user.email, pseudo: user.pseudo, acceptNewContacts: user.acceptNewContacts });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
@@ -65,21 +73,35 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { email, password } = req.body;
+    const { pseudo, acceptNewContacts, currentPassword, newPassword } = req.body;
 
     try {
-        const data: any = {};
-        if (email) data.email = email;
-        if (password) {
-            data.password = await bcrypt.hash(password, 10);
+        if (newPassword !== undefined) {
+            const result = await account().changePassword(id, currentPassword ?? '', newPassword);
+            if (!result.ok) {
+                const known = {
+                    not_found: [404, 'Utilisateur introuvable'],
+                    wrong_password: [400, 'Mot de passe actuel incorrect'],
+                    weak_password: [400, 'Le mot de passe doit contenir au moins 8 caractères'],
+                } as const;
+                const [status, error] = known[result.reason];
+                return res.status(status).json({ error });
+            }
         }
 
-        const user = await prisma.user.update({
-            where: { id },
-            data,
-        });
+        if (pseudo !== undefined || acceptNewContacts !== undefined) {
+            const result = await account().updateSettings(id, { pseudo, acceptNewContacts });
+            if (!result.ok) {
+                const error = result.reason === 'not_found' ? 'Utilisateur introuvable' : PSEUDO_MESSAGES[result.reason];
+                return res.status(result.reason === 'not_found' ? 404 : 400).json({ error });
+            }
+        }
 
-        res.json({ message: 'User updated successfully', user: { id: user.id, email: user.email } });
+        const user = await accountStore.findById(id);
+        res.json({
+            message: 'User updated successfully',
+            user: { id, email: user?.email, pseudo: user?.pseudo ?? null, acceptNewContacts: user?.acceptNewContacts ?? true },
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
@@ -165,33 +187,8 @@ export const updatePushToken = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
-    const { id } = req.params;
-
     try {
-        // Delete messages first
-        await prisma.message.deleteMany({
-            where: {
-                OR: [
-                    { senderId: id },
-                    { receiverId: id }
-                ]
-            }
-        });
-
-        // Delete blocks
-        await prisma.block.deleteMany({
-            where: {
-                OR: [
-                    { blockerId: id },
-                    { blockedId: id }
-                ]
-            }
-        });
-
-        await prisma.user.delete({
-            where: { id },
-        });
-
+        await account().deleteAccount(req.params.id);
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error(error);
@@ -243,6 +240,7 @@ export const getBlockedUsers = async (req: Request, res: Response) => {
                 blocked: {
                     select: {
                         id: true,
+                        pseudo: true,
                         vehicles: {
                             where: { isPrimary: true },
                             select: { plate: true }
@@ -253,7 +251,7 @@ export const getBlockedUsers = async (req: Request, res: Response) => {
         });
         res.json(blocks.map(b => ({
             id: b.blocked.id,
-            plate: b.blocked.vehicles[0]?.plate || 'Inconnu'
+            displayName: displayName(b.blocked.pseudo, b.blocked.vehicles[0]?.plate)
         })));
     } catch (error) {
         console.error(error);

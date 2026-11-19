@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { buildConversations, ConversationMessage } from './conversations';
 
-const me = { id: 'me', email: 'me@x.fr', vehicles: [{ plate: 'AA-111-AA' }] };
-const bob = { id: 'bob', email: 'bob@x.fr', vehicles: [{ plate: 'BB-222-BB' }] };
-const eve = { id: 'eve', email: 'eve@x.fr', vehicles: [] };
+const me = { id: 'me', pseudo: null, vehicles: [{ plate: 'AA-111-AA' }] };
+const bob = { id: 'bob', pseudo: null as string | null, vehicles: [{ plate: 'BB-222-BB' }] };
+const eve = { id: 'eve', pseudo: null, vehicles: [] };
 
 const myVehicles = [
     { plate: 'AA-111-AA', isPrimary: true },
@@ -11,7 +11,7 @@ const myVehicles = [
 ];
 
 let t = 0;
-function msg(from: typeof me, to: typeof me, overrides: Partial<ConversationMessage> = {}): ConversationMessage {
+function msg(from: { id: string; pseudo: string | null; vehicles: { plate: string }[] }, to: { id: string; pseudo: string | null; vehicles: { plate: string }[] }, overrides: Partial<ConversationMessage> = {}): ConversationMessage {
     return {
         senderId: from.id,
         receiverId: to.id,
@@ -91,6 +91,20 @@ describe('buildConversations', () => {
             msg(bob, me),
         ], myVehicles);
         expect(result.map(c => c.partnerId)).toEqual(['bob', 'eve']);
+    });
+
+    it('shows the partner pseudo instead of any plate when they set one', () => {
+        const zoe = { ...bob, pseudo: 'Zoé' };
+        const [mine] = buildConversations('me', [msg(zoe, me, { relatedPlate: 'CC-333-CC' })], myVehicles);
+        expect(mine.otherDisplay).toBe('Zoé');
+        const [theirs] = buildConversations('me', [msg(me, zoe, { relatedPlate: 'BB-222-BB' })], myVehicles);
+        expect(theirs.otherDisplay).toBe('Zoé');
+    });
+
+    it('never exposes the partner email', () => {
+        const [c] = buildConversations('me', [msg(bob, me)], myVehicles);
+        expect(JSON.stringify(c)).not.toContain('@');
+        expect(c).not.toHaveProperty('email');
     });
 
     it('returns an empty list when there are no messages', () => {

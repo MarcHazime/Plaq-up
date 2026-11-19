@@ -8,6 +8,8 @@ dotenv.config();
 
 import { assertAuthConfigured } from './auth/token';
 assertAuthConfigured();
+import { assertAccountConfigured } from './account';
+assertAccountConfigured();
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';

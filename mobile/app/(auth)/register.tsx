@@ -92,7 +92,7 @@ export default function Register() {
                             <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Mot de passe (min 6 car.)"
+                                placeholder="Mot de passe (min 8 car.)"
                                 placeholderTextColor={COLORS.textSecondary}
                                 value={password}
                                 onChangeText={setPassword}

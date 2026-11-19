@@ -1,296 +1,154 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db';
-import bcrypt from 'bcryptjs';
-import { sendEmail } from '../services/emailService';
-import * as Plate from '../domain/plate';
+import { account } from '../account';
+import { passwordProblem } from '../account/password';
 import { signToken } from '../auth/token';
 
+const serverError = (res: Response, context: string, error: unknown) => {
+    console.error(`${context}:`, error);
+    res.status(500).json({ error: 'Erreur interne du serveur' });
+};
+
+const REGISTER_ERRORS = {
+    invalid_plate: 'Format de plaque invalide (ex: AA-123-BB)',
+    weak_password: passwordProblem('') as string,
+    invalid_email: 'Email requis pour la vérification',
+    plate_taken: 'Plaque déjà enregistrée',
+    email_taken: 'Email déjà enregistré',
+    email_failed: "Impossible d'envoyer l'email de vérification. Réessayez plus tard.",
+} as const;
 
 export const register = async (req: Request, res: Response) => {
-    const { password, email } = req.body;
-    const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;
-
-    if (!plate) {
-        return res.status(400).json({ error: 'Format de plaque invalide (ex: AA-123-BB)' });
-    }
-
-    if (!password || password.length < 6) {
-        return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
-    }
-
-    if (!email) {
-        return res.status(400).json({ error: 'Email requis pour la vérification' });
-    }
-
     try {
-        // Check if plate exists in Vehicle table
-        const existingVehicle = await prisma.vehicle.findUnique({ where: { plate } });
-        if (existingVehicle) {
-            return res.status(400).json({ error: 'Plaque déjà enregistrée' });
+        const { plate, password, email } = req.body;
+        const result = await account().register({ plate, password, email });
+
+        if (!result.ok) {
+            if (result.reason === 'email_failed') console.error('Registration email failed:', result.detail);
+            return res.status(result.reason === 'email_failed' ? 502 : 400).json({ error: REGISTER_ERRORS[result.reason] });
         }
-
-        const existingEmail = await prisma.user.findUnique({ where: { email } });
-        if (existingEmail) {
-            return res.status(400).json({ error: 'Email déjà enregistré' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Generate Verification OTP
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const verificationExpires = new Date(Date.now() + 24 * 3600 * 1000); // 24 hours
-
-        // Transaction to create User and Primary Vehicle
-        const user = await prisma.$transaction(async (prisma) => {
-            const newUser = await prisma.user.create({
-                data: {
-                    password: hashedPassword,
-                    email,
-                    isVerified: false,
-                    verificationToken: verificationCode,
-                    verificationExpires
-                },
-            });
-
-            await prisma.vehicle.create({
-                data: {
-                    plate,
-                    userId: newUser.id,
-                    isPrimary: true
-                }
-            });
-
-            return newUser;
-        });
-
-        // Send Verification Email
-        await sendEmail(
-            email,
-            "Bienvenue sur Plaq'Up - Vérifiez votre compte",
-            `Bonjour,\n\nBienvenue sur Plaq'Up !\n\nPour activer votre compte et commencer à utiliser l'application, veuillez saisir le code de vérification suivant :\n\n${verificationCode}\n\nCe code est valable 24 heures.\n\nÀ bientôt,\nL'équipe Plaq'Up`
-        );
 
         res.status(201).json({
             message: 'Inscription réussie. Veuillez vérifier votre email.',
-            userId: user.id,
-            email: user.email,
+            userId: result.userId,
+            email: result.email,
             requiresVerification: true,
-            primaryPlate: plate
+            primaryPlate: result.primaryPlate,
         });
-    } catch (error: any) {
-        console.error('Registration Error:', error);
-        console.error('Registration Error:', error);
-        // Return a more specific error if email failed
-        if (error.code === 'EAUTH' || error.responseCode === 535) {
-            res.status(500).json({ error: "Impossible d'envoyer l'email. Vérifiez les paramètres SMTP." });
-        } else {
-            res.status(500).json({ error: error.message || 'Erreur interne du serveur' });
-        }
+    } catch (error) {
+        serverError(res, 'Registration Error', error);
     }
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {
-    const { userId, code } = req.body;
-
-    if (!userId || !code) {
-        return res.status(400).json({ error: 'ID utilisateur et code requis' });
-    }
-
     try {
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const { userId, code } = req.body;
+        const result = await account().verifyEmail(userId, code);
 
-        if (!user) {
-            return res.status(404).json({ error: 'Utilisateur introuvable' });
+        if (!result.ok) {
+            const known = {
+                missing: [400, 'ID utilisateur et code requis'],
+                not_found: [404, 'Utilisateur introuvable'],
+                already_verified: [400, 'Compte déjà vérifié'],
+                invalid_code: [400, 'Code invalide ou expiré'],
+            } as const;
+            const [status, error] = known[result.reason];
+            return res.status(status).json({ error });
         }
-
-        if (user.isVerified) {
-            return res.status(400).json({ error: 'Compte déjà vérifié' });
-        }
-
-        if (user.verificationToken !== code || !user.verificationExpires || user.verificationExpires < new Date()) {
-            return res.status(400).json({ error: 'Code invalide ou expiré' });
-        }
-
-        // Verify user
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
-                isVerified: true,
-                verificationToken: null,
-                verificationExpires: null
-            }
-        });
 
         res.json({
             message: 'Compte vérifié avec succès',
-            userId: updatedUser.id,
-            token: signToken(updatedUser.id),
-            email: updatedUser.email
+            userId: result.userId,
+            token: signToken(result.userId),
+            email: result.email,
         });
-
     } catch (error) {
-        console.error('Email Verification Error:', error);
-        res.status(500).json({ error: 'Erreur interne du serveur' });
+        serverError(res, 'Email Verification Error', error);
     }
 };
 
 export const resendVerification = async (req: Request, res: Response) => {
-    const { userId } = req.body;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'ID utilisateur requis' });
-    }
-
     try {
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'ID utilisateur requis' });
 
-        if (!user) {
-            return res.status(404).json({ error: 'Utilisateur introuvable' });
+        const result = await account().resendCode(userId);
+        if (!result.ok) {
+            const known = {
+                not_found: [404, 'Utilisateur introuvable'],
+                already_verified: [400, 'Compte déjà vérifié'],
+                no_email: [400, 'Aucun email associé à ce compte'],
+                email_failed: [502, "Impossible d'envoyer le code. Réessayez plus tard."],
+            } as const;
+            const [status, error] = known[result.reason];
+            return res.status(status).json({ error });
         }
-
-        if (user.isVerified) {
-            return res.status(400).json({ error: 'Compte déjà vérifié' });
-        }
-
-        if (!user.email) {
-            return res.status(400).json({ error: 'Aucun email associé à ce compte' });
-        }
-
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                verificationToken: verificationCode,
-                verificationExpires: new Date(Date.now() + 24 * 3600 * 1000)
-            }
-        });
-
-        await sendEmail(
-            user.email,
-            "Plaq'Up - Votre nouveau code de vérification",
-            `Bonjour,\n\nVoici votre nouveau code de vérification :\n\n${verificationCode}\n\nCe code est valable 24 heures.\n\nL'équipe Plaq'Up`
-        );
 
         res.json({ message: 'Un nouveau code a été envoyé.' });
     } catch (error) {
-        console.error('Resend Verification Error:', error);
-        res.status(500).json({ error: "Impossible d'envoyer le code. Réessayez plus tard." });
+        serverError(res, 'Resend Verification Error', error);
     }
 };
 
 export const login = async (req: Request, res: Response) => {
-    const { password } = req.body;
-    const plate = typeof req.body.plate === 'string' ? Plate.parse(req.body.plate) : null;
-
-    if (!plate) {
-        return res.status(401).json({ error: 'Identifiants invalides' });
-    }
-
     try {
-        // Find vehicle first to get user
-        const vehicle = await prisma.vehicle.findUnique({
-            where: { plate },
-            include: { user: true }
-        });
+        const { plate, password } = req.body;
+        const result = await account().login({ plate, password });
 
-        if (!vehicle) {
-            return res.status(401).json({ error: 'Identifiants invalides' });
-        }
-
-        const user = vehicle.user;
-
-        if (!user.isVerified) {
-            return res.status(401).json({ error: 'Email non vérifié. Veuillez vérifier votre email.' });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
+        if (!result.ok) {
+            if (result.reason === 'unverified') {
+                // Lets the app send the user straight to the code screen.
+                return res.status(403).json({
+                    error: 'Email non vérifié. Veuillez vérifier votre email.',
+                    code: 'EMAIL_NOT_VERIFIED',
+                    userId: result.userId,
+                    email: result.email,
+                });
+            }
+            if (result.reason === 'suspended') {
+                return res.status(403).json({ error: 'Votre compte est suspendu.', code: 'ACCOUNT_SUSPENDED' });
+            }
             return res.status(401).json({ error: 'Identifiants invalides' });
         }
 
         res.json({
             message: 'Connexion réussie',
-            userId: user.id,
-            token: signToken(user.id),
-            email: user.email,
-            primaryPlate: vehicle.plate // The plate they logged in with implies context
+            userId: result.userId,
+            token: signToken(result.userId),
+            email: result.email,
+            primaryPlate: result.primaryPlate,
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erreur interne du serveur' });
+        serverError(res, 'Login Error', error);
     }
 };
 
-// Forgot Password
 export const forgotPassword = async (req: Request, res: Response) => {
-    const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ error: 'Email requis' });
-    }
-
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            // Security: Don't reveal if user exists
-            return res.json({ message: 'Si cet email existe, un code a été envoyé.' });
-        }
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email requis' });
 
-        // Generate 6-digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expires = new Date(Date.now() + 3600000); // 1 hour
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                resetToken: code,
-                resetTokenExpires: expires
-            }
-        });
-
-        // Send Email (Real or Dev Mode handled by service)
-        await sendEmail(
-            email,
-            "Réinitialisation mot de passe - Plaq'Up",
-            `Bonjour,\n\nVoici votre code de réinitialisation : ${code}\n\nCe code est valable 1 heure.\n\nCordialement,\nL'équipe Plaq'Up`
-        );
+        const result = await account().requestPasswordReset(email);
+        if (!result.ok) return res.status(502).json({ error: "Impossible d'envoyer l'email. Réessayez plus tard." });
 
         res.json({ message: 'Si cet email existe, un code a été envoyé.' });
     } catch (error) {
-        console.error('Forgot Password Error:', error);
-        res.status(500).json({ error: 'Erreur interne' });
+        serverError(res, 'Forgot Password Error', error);
     }
 };
 
-// Reset Password
 export const resetPassword = async (req: Request, res: Response) => {
-    const { email, code, newPassword } = req.body;
-
-    if (!email || !code || !newPassword) {
-        return res.status(400).json({ error: 'Tous les champs sont requis' });
-    }
-
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) return res.status(400).json({ error: 'Tous les champs sont requis' });
 
-        if (!user || user.resetToken !== code || !user.resetTokenExpires || user.resetTokenExpires < new Date()) {
-            return res.status(400).json({ error: 'Code invalide ou expiré' });
+        const result = await account().resetPassword({ email, code, newPassword });
+        if (!result.ok) {
+            const error = result.reason === 'weak_password' ? passwordProblem('') : 'Code invalide ou expiré';
+            return res.status(400).json({ error });
         }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                password: hashedPassword,
-                resetToken: null,
-                resetTokenExpires: null
-            }
-        });
 
         res.json({ message: 'Mot de passe réinitialisé avec succès' });
     } catch (error) {
-        console.error('Reset Password Error:', error);
-        res.status(500).json({ error: 'Erreur interne' });
+        serverError(res, 'Reset Password Error', error);
     }
 };

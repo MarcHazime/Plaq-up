@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { ChatStore } from './types';
 
 const primaryPlate = { vehicles: { where: { isPrimary: true }, select: { plate: true } } };
-const party = { select: { id: true, email: true, ...primaryPlate } };
+const party = { select: { id: true, pseudo: true, ...primaryPlate } };
 
 const pair = (a: string, b: string): [string, string] => (a < b ? [a, b] : [b, a]);
 

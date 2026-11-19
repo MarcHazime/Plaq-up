@@ -12,6 +12,7 @@ router.post('/:userId/vehicles', requireSelf('userId'), UserController.addVehicl
 router.delete('/:userId/vehicles/:id', requireSelf('userId'), UserController.deleteVehicle);
 
 router.get('/search', UserController.searchUser); // ?plate=AA-123-BB
+router.get('/:id/settings', requireSelf('id'), UserController.getSettings);
 router.get('/:id', getUserById);
 router.put('/:id', requireSelf('id'), updateUser);
 router.put('/:id/push-token', requireSelf('id'), updatePushToken);

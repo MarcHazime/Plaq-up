@@ -3,7 +3,7 @@ import type { ChatStore, ChatUser, NewMessage, OpenedConversation, StoredMessage
 
 interface SeedUser extends Partial<ChatUser> {
     id: string;
-    email?: string | null;
+    pseudo?: string | null;
     plates?: string[]; // first one is the primary vehicle
 }
 
@@ -90,7 +90,7 @@ export class MemoryChatStore implements ChatStore {
     async conversationMessages(userId: string): Promise<ConversationMessage[]> {
         const party = (id: string) => {
             const u = this.users.get(id);
-            return { id, email: u?.email ?? null, vehicles: u?.plates?.[0] ? [{ plate: u.plates[0] }] : [] };
+            return { id, pseudo: u?.pseudo ?? null, vehicles: u?.plates?.[0] ? [{ plate: u.plates[0] }] : [] };
         };
         return this.messages
             .filter(m => m.senderId === userId || m.receiverId === userId)

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, FlatList, Switch } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/auth';
 import { api } from '../../services/api';
@@ -11,7 +11,12 @@ import * as Plate from '../../utils/plate';
 export default function Profile() {
     const { user, signIn, signOut } = useAuth();
     const [email, setEmail] = useState(user?.email || '');
-    const [password, setPassword] = useState('');
+    const [pseudo, setPseudo] = useState('');
+    const [savedPseudo, setSavedPseudo] = useState('');
+    const [acceptNewContacts, setAcceptNewContacts] = useState(true);
+    const [savedAccept, setSavedAccept] = useState(true);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     // Vehicle State
@@ -22,8 +27,23 @@ export default function Profile() {
     useEffect(() => {
         if (user) {
             loadVehicles();
+            loadSettings();
         }
     }, [user]);
+
+    const loadSettings = async () => {
+        if (!user) return;
+        try {
+            const settings = await api.getSettings(user.id);
+            setEmail(settings.email || '');
+            setPseudo(settings.pseudo || '');
+            setSavedPseudo(settings.pseudo || '');
+            setAcceptNewContacts(settings.acceptNewContacts);
+            setSavedAccept(settings.acceptNewContacts);
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        }
+    };
 
     const loadVehicles = async () => {
         if (!user) return;
@@ -85,22 +105,30 @@ export default function Profile() {
 
     const handleUpdate = async () => {
         if (!user) return;
-        setLoading(true);
-        try {
-            const updates: any = {};
-            if (email !== user.email) updates.email = email;
-            if (password) updates.password = password;
-
-            if (Object.keys(updates).length === 0) {
-                Alert.alert('Aucun changement', 'Vous n\'avez fait aucun changement.');
-                setLoading(false);
+        const updates: any = {};
+        if (pseudo.trim() !== savedPseudo) updates.pseudo = pseudo.trim();
+        if (acceptNewContacts !== savedAccept) updates.acceptNewContacts = acceptNewContacts;
+        if (newPassword) {
+            if (!currentPassword) {
+                Alert.alert('Erreur', 'Saisissez votre mot de passe actuel pour en choisir un nouveau.');
                 return;
             }
+            updates.currentPassword = currentPassword;
+            updates.newPassword = newPassword;
+        }
 
-            const response = await api.updateUser(user.id, updates);
-            signIn({ ...user, ...response.user }); // Update local context
+        if (Object.keys(updates).length === 0) {
+            Alert.alert('Aucun changement', 'Vous n\'avez fait aucun changement.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await api.updateUser(user.id, updates);
+            await loadSettings();
+            setCurrentPassword('');
+            setNewPassword('');
             Alert.alert('Succès', 'Profil mis à jour avec succès');
-            setPassword(''); // Clear password field
         } catch (error: any) {
             Alert.alert('Erreur', error.message);
         } finally {
@@ -183,12 +211,39 @@ export default function Profile() {
                     <View style={styles.inputContainer}>
                         <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { color: COLORS.textSecondary }]}
                             value={email}
-                            onChangeText={setEmail}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            placeholder="email@exemple.com"
+                            editable={false}
+                        />
+                    </View>
+
+                    <Text style={styles.label}>Pseudo (affiché à la place de votre plaque)</Text>
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            value={pseudo}
+                            onChangeText={setPseudo}
+                            maxLength={20}
+                            placeholder="Laisser vide pour afficher votre plaque"
+                            placeholderTextColor={COLORS.textSecondary}
+                        />
+                    </View>
+
+                    <View style={styles.switchRow}>
+                        <Text style={[styles.label, { flex: 1, marginBottom: 0 }]}>Accepter les nouvelles conversations</Text>
+                        <Switch value={acceptNewContacts} onValueChange={setAcceptNewContacts} />
+                    </View>
+
+                    <Text style={styles.label}>Mot de passe actuel</Text>
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                        <TextInput
+                            style={styles.input}
+                            value={currentPassword}
+                            onChangeText={setCurrentPassword}
+                            secureTextEntry
+                            placeholder="Nécessaire pour changer de mot de passe"
                             placeholderTextColor={COLORS.textSecondary}
                         />
                     </View>
@@ -198,10 +253,10 @@ export default function Profile() {
                         <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            value={password}
-                            onChangeText={setPassword}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
                             secureTextEntry
-                            placeholder="Nouveau mot de passe"
+                            placeholder="8 caractères minimum"
                             placeholderTextColor={COLORS.textSecondary}
                         />
                     </View>
@@ -228,6 +283,11 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING.m,
+    },
     container: {
         flex: 1,
         backgroundColor: COLORS.background,

@@ -18,6 +18,7 @@ model User {
   resetTokenExpires DateTime?
 
   suspendedAt       DateTime?
+  pseudo            String?
   acceptNewContacts Boolean   @default(true)
 
   isVerified        Boolean   @default(false)

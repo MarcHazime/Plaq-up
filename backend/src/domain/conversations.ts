@@ -1,6 +1,6 @@
 export interface ConversationPartner {
     id: string;
-    email: string | null;
+    pseudo: string | null;
     vehicles: { plate: string }[]; // primary vehicle only
 }
 
@@ -25,7 +25,6 @@ export interface MyVehicle {
 export interface Conversation {
     id: string;
     partnerId: string;
-    email: string | null;
     relatedPlate: string;
     lastMessage: string | null;
     timestamp: Date;
@@ -63,14 +62,13 @@ export function buildConversations(
             conversation = {
                 id: partner.id,
                 partnerId: partner.id,
-                email: partner.email,
                 relatedPlate: plate,
                 lastMessage: msg.content,
                 timestamp: msg.createdAt,
                 // My plate in the subject -> that plate; otherwise I speak with my primary.
                 myScope: isMyPlate ? plate : myPrimary,
-                // My plate in the subject -> show their primary; otherwise show the subject.
-                otherDisplay: isMyPlate ? partner.vehicles[0]?.plate || 'Inconnu' : plate,
+                // Their pseudo if they set one. Otherwise: my plate in the subject -> their primary; else the subject.
+                otherDisplay: partner.pseudo || (isMyPlate ? partner.vehicles[0]?.plate || 'Inconnu' : plate),
                 unreadCount: 0,
             };
             conversations.set(partner.id, conversation);

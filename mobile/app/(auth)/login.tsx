@@ -2,7 +2,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth';
-import { api } from '../../services/api';
+import { api, ApiError } from '../../services/api';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,9 +18,14 @@ export default function Login() {
         try {
             setError('');
             const response = await api.login(plate, password);
-            console.log('Login success:', response);
             signIn({ id: response.userId, plate: response.primaryPlate, token: response.token });
         } catch (err: any) {
+            if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+                // The account exists but was never verified: send a fresh code and go to the code screen.
+                try { await api.resendVerification(err.data.userId); } catch { /* the code screen has its own resend button */ }
+                router.push({ pathname: '/(auth)/verify-email', params: { userId: err.data.userId, email: err.data.email } });
+                return;
+            }
             setError(err.message);
         }
     };

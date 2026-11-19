@@ -41,7 +41,7 @@ export default function Chat() {
             try {
                 const partner = await api.getUserById(id);
                 // If relatedPlate is set, we might prioritize that in title
-                setPartnerPlate(partner.plate || 'Utilisateur');
+                setPartnerPlate(partner.displayName || 'Utilisateur');
             } catch (error) {
                 console.error('Error fetching partner:', error);
                 setPartnerPlate('Utilisateur');
