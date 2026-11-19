@@ -46,8 +46,17 @@ Vocabulaire : voir [GLOSSARY.md](../GLOSSARY.md). Ce document décrit des décis
 - Fini quand : un signalement apparaît dans la page, et suspendre un compte l'empêche de se connecter et d'écrire.
 
 ### 4. Images privées
-- Stockage Cloudflare R2 privé, liens temporaires, accès réservé aux deux participants.
-- Fini quand : une image n'est plus lisible sans jeton valide et survit à un déploiement.
+- Stockage Cloudflare R2 privé, accès réservé aux deux participants de la conversation.
+- Les liens sont fabriqués par le serveur à chaque chargement de la conversation, valables 1 heure. L'app en redemande un frais si une image échoue. Les images ne transitent pas par Railway (le trafic sortant y est facturé).
+- Plafonds contre les coûts abusifs (réglables dans un fichier de configuration) :
+  - 2 Mo par image, JPEG, PNG ou WebP, type vérifié sur le contenu du fichier ;
+  - 20 images envoyées par 24 h et par utilisateur ;
+  - plafond global de stockage de 8 Go et plafond mensuel d'écritures, sous les limites gratuites. Au-delà, l'envoi d'images est refusé, le texte continue ;
+  - 300 liens de lecture par heure et par utilisateur.
+- Ménage : les images jamais rattachées à un message sont supprimées après 24 h ; celles d'une conversation ou d'un compte supprimé sont effacées du bucket.
+- La page d'administration affiche le stockage utilisé et le nombre d'images.
+- Alerte de facturation à activer côté Cloudflare.
+- Fini quand : une image n'est plus lisible sans jeton valide, survit à un déploiement, et les plafonds refusent l'envoi avec un message clair.
 
 ### 5. Suivi et sauvegardes
 - Sentry dans le backend et dans l'app.

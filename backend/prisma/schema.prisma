@@ -40,6 +40,8 @@ model User {
   conversationsAsA Conversation[] @relation("ConversationUserA")
   conversationsAsB Conversation[] @relation("ConversationUserB")
 
+  images          Image[]
+
   reportsMade     Report[] @relation("ReportsMade")
   reportsReceived Report[] @relation("ReportsReceived")
 }
@@ -66,6 +68,9 @@ model Message {
   
   receiverId String
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  imageId    String?  @unique
+  image      Image?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
   relatedPlate String? // To track which vehicle the conversation is about
 
@@ -124,4 +129,21 @@ model Report {
 
   @@index([status, createdAt])
   @@index([reporterId, createdAt])
+}
+
+// A photo stored in the private bucket. Readable only through short-lived signed links
+// handed to the two participants of the Conversation it was sent in.
+// An Image with no Message (never sent, or its Message was deleted) is swept after 24 hours.
+model Image {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  bytes       Int
+  contentType String
+  createdAt   DateTime @default(now())
+  message     Message?
+
+  @@index([ownerId, createdAt])
+  @@index([createdAt])
 }

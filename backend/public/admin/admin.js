@@ -66,6 +66,7 @@
   var STATS = [
     ['users', 'Utilisateurs'], ['verifiedUsers', 'Comptes vérifiés'], ['messages', 'Messages'],
     ['messagesLast24h', 'Messages (24 h)'], ['messagesLast7d', 'Messages (7 j)'], ['conversations', 'Conversations'],
+    ['images', 'Images stockées'], ['imageBytes', 'Stockage images'],
     ['openReports', 'Signalements à traiter'], ['suspendedUsers', 'Comptes suspendus']
   ];
   function loadStats() {
@@ -73,7 +74,8 @@
       var box = $('stats'); box.textContent = '';
       STATS.forEach(function (pair) {
         var alert = pair[0] === 'openReports' && s[pair[0]] > 0;
-        box.appendChild(el('div', { class: 'stat' + (alert ? ' alert' : '') }, [el('b', { text: String(s[pair[0]]) }), el('span', { text: pair[1] })]));
+        var value = pair[0] === 'imageBytes' ? (s.imageBytes / 1048576).toFixed(1) + ' Mo' : String(s[pair[0]]);
+        box.appendChild(el('div', { class: 'stat' + (alert ? ' alert' : '') }, [el('b', { text: value }), el('span', { text: pair[1] })]));
       });
     }).catch(function (e) { showError(e.message); });
   }
@@ -95,6 +97,11 @@
       evidence.appendChild(line(m.content, (m.senderId === s.reported.id ? 'Signalé' : 'Signalant') + ' · ' + fmt(m.createdAt)));
     });
     evidence.appendChild(line(s.message.content, 'MESSAGE SIGNALÉ · ' + fmt(s.message.createdAt), true));
+    if (s.message.imageId) {
+      var link = el('a', { text: r.imageUrl ? "Voir l'image jointe (lien valable 1 h)" : 'Image jointe supprimée', target: '_blank', rel: 'noopener noreferrer' });
+      if (r.imageUrl) link.href = r.imageUrl;
+      evidence.appendChild(link);
+    }
 
     var card = el('div', { class: 'card' }, [
       el('h3', { text: REASONS[r.reason] + ' — contre ' + label(s.reported) }),

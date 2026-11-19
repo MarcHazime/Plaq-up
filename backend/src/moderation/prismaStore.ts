@@ -48,7 +48,7 @@ export function createPrismaModerationStore(prisma: PrismaClient): ModerationSto
             });
             return m && {
                 id: m.id, senderId: m.senderId, receiverId: m.receiverId, content: m.content,
-                imageUrl: m.imageUrl, createdAt: m.createdAt, sender: party(m.sender), receiver: party(m.receiver),
+                imageUrl: m.imageUrl, imageId: m.imageId, createdAt: m.createdAt, sender: party(m.sender), receiver: party(m.receiver),
             };
         },
 

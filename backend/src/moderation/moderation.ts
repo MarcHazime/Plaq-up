@@ -60,7 +60,7 @@ export function createModeration({ store, now = () => new Date() }: ModerationDe
                 reason,
                 note: clean(note),
                 snapshot: {
-                    message: { id: message.id, senderId: message.senderId, content: message.content, imageUrl: message.imageUrl, createdAt: message.createdAt },
+                    message: { id: message.id, senderId: message.senderId, content: message.content, imageUrl: message.imageUrl, imageId: message.imageId, createdAt: message.createdAt },
                     context,
                     reporter: message.receiver,
                     reported: message.sender,

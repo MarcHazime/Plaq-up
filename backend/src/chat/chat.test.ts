@@ -35,10 +35,22 @@ describe('send: basic delivery', () => {
         expect(events.messageSent.mock.calls[0][1].pushToken).toBe('ExponentPushToken[bob]');
     });
 
-    it('accepts an image with no text', async () => {
-        const { chat } = setup();
-        const result = await chat.send({ senderId: 'me', receiverId: 'bob', content: '', imageUrl: '/uploads/a.jpg' });
+    it('accepts an image with no text, once', async () => {
+        const { chat, store } = setup();
+        store.addImage('img1', 'me');
+        const result = await chat.send({ senderId: 'me', receiverId: 'bob', content: '', imageId: 'img1' });
         expect(result.ok).toBe(true);
+        if (result.ok) expect(result.message.imageId).toBe('img1');
+        // the same image cannot be sent again
+        expect(await chat.send({ senderId: 'me', receiverId: 'bob', content: '', imageId: 'img1' })).toEqual({ ok: false, reason: 'invalid_image' });
+    });
+
+    it("refuses an image that is unknown or belongs to someone else", async () => {
+        const { chat, store, events } = setup();
+        store.addImage('theirs', 'bob');
+        expect(await chat.send({ senderId: 'me', receiverId: 'bob', content: 'look', imageId: 'theirs' })).toEqual({ ok: false, reason: 'invalid_image' });
+        expect(await chat.send({ senderId: 'me', receiverId: 'bob', content: 'look', imageId: 'ghost' })).toEqual({ ok: false, reason: 'invalid_image' });
+        expect(events.messageSent).not.toHaveBeenCalled();
     });
 
     it('refuses an empty message', async () => {

@@ -47,10 +47,16 @@ export function createChat({ store, events = {}, now = () => new Date(), config 
     });
 
     return {
-        async send({ senderId, receiverId, content, imageUrl, relatedPlate }) {
+        async send({ senderId, receiverId, content, imageId, relatedPlate }) {
             const text = (content ?? '').trim();
-            if (!text && !imageUrl) return { ok: false, reason: 'empty' };
+            if (!text && !imageId) return { ok: false, reason: 'empty' };
             if (senderId === receiverId) return { ok: false, reason: 'self' };
+
+            if (imageId) {
+                // Only the uploader may send an Image, and only once.
+                const image = await store.findImage(imageId);
+                if (!image || image.ownerId !== senderId || image.attached) return { ok: false, reason: 'invalid_image' };
+            }
 
             const [sender, receiver] = await Promise.all([store.getUser(senderId), store.getUser(receiverId)]);
             if (!receiver) return { ok: false, reason: 'unknown_receiver' };
@@ -92,7 +98,7 @@ export function createChat({ store, events = {}, now = () => new Date(), config 
                 senderId,
                 receiverId,
                 content: text,
-                imageUrl: imageUrl ?? null,
+                imageId: imageId ?? null,
                 relatedPlate: relatedPlate ?? null,
                 createdAt: at,
             });

@@ -12,6 +12,7 @@ interface SeedMessage {
     receiverId: string;
     content: string;
     imageUrl?: string | null;
+    imageId?: string | null;
     createdAt: Date;
 }
 
@@ -40,7 +41,7 @@ export class MemoryModerationStore implements ModerationStore {
 
     async getMessage(id: string): Promise<ReportedMessage | null> {
         const m = this.messages.find(x => x.id === id);
-        return m ? { ...m, imageUrl: m.imageUrl ?? null, sender: this.party(m.senderId), receiver: this.party(m.receiverId) } : null;
+        return m ? { ...m, imageUrl: m.imageUrl ?? null, imageId: m.imageId ?? null, sender: this.party(m.senderId), receiver: this.party(m.receiverId) } : null;
     }
 
     async conversationContext(a: string, b: string, at: Date, exceptId: string, limit: number): Promise<ContextMessage[]> {

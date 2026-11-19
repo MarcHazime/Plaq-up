@@ -59,6 +59,11 @@ export function createPrismaChatStore(prisma: PrismaClient): ChatStore {
         countOpenedBySince: (userId, since) =>
             prisma.conversation.count({ where: { openedById: userId, openedAt: { gte: since } } }),
 
+        async findImage(id) {
+            const image = await prisma.image.findUnique({ where: { id }, include: { message: { select: { id: true } } } });
+            return image && { ownerId: image.ownerId, attached: image.message !== null };
+        },
+
         createMessage: message => prisma.message.create({ data: message }),
 
         messagesBetween: (a, b) => prisma.message.findMany({ where: between(a, b), orderBy: { createdAt: 'asc' } }),

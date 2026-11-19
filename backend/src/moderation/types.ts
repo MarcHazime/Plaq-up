@@ -13,6 +13,7 @@ export interface ReportedMessage {
     receiverId: string;
     content: string;
     imageUrl: string | null;
+    imageId: string | null;
     createdAt: Date;
     sender: PartyInfo;
     receiver: PartyInfo;
@@ -27,7 +28,7 @@ export interface ContextMessage {
 
 /** The frozen evidence kept with a Report. */
 export interface ReportSnapshot {
-    message: { id: string; senderId: string; content: string; imageUrl: string | null; createdAt: Date };
+    message: { id: string; senderId: string; content: string; imageUrl: string | null; imageId: string | null; createdAt: Date };
     context: ContextMessage[];
     reporter: PartyInfo;
     reported: PartyInfo;

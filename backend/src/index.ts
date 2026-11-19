@@ -10,19 +10,15 @@ import { assertAuthConfigured } from './auth/token';
 assertAuthConfigured();
 import { assertAccountConfigured } from './account';
 assertAccountConfigured();
+import { assertImagesConfigured, startImageSweeper } from './images';
+assertImagesConfigured();
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { setupSocket } from './socket';
 
-import fs from 'fs';
 import path from 'path';
-
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,7 +53,6 @@ app.use(cors({
     origin: process.env.ALLOWED_ORIGIN || "*", // Use env var or allow all
 }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -73,6 +68,8 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+startImageSweeper();
 
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

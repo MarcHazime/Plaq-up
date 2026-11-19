@@ -143,6 +143,14 @@ export default function Chat() {
         );
     };
 
+    // Image links last an hour. If one fails (conversation left open), fetch the history again for fresh ones.
+    const lastRefresh = useRef(0);
+    const refreshExpiredImages = () => {
+        if (Date.now() - lastRefresh.current < 30000) return;
+        lastRefresh.current = Date.now();
+        loadHistory();
+    };
+
     // Long-press on a message received from the partner.
     const confirmReport = (messageId: string) => {
         const send = async (reason: 'harassment' | 'spam' | 'other') => {
@@ -205,8 +213,8 @@ export default function Chat() {
         );
     };
 
-    const sendMessage = (content: string, imageUrl?: string) => {
-        if ((!content.trim() && !imageUrl) || !user || !id) return;
+    const sendMessage = (content: string, image?: { id: string; previewUrl: string | null }) => {
+        if ((!content.trim() && !image) || !user || !id) return;
         if (isBlockedByMe) {
             Alert.alert("Action impossible", "Vous avez bloqué cet utilisateur. Débloquez-le pour répondre.");
             return;
@@ -217,7 +225,8 @@ export default function Chat() {
             senderId: user.id,
             receiverId: id,
             content: content,
-            imageUrl: imageUrl,
+            imageId: image?.id,
+            imageUrl: image?.previewUrl, // shown while sending; the server's saved copy replaces it
             tempId,
             relatedPlate, // Add context
             createdAt: new Date().toISOString()
@@ -255,10 +264,10 @@ export default function Chat() {
             } as any);
 
             const response = await api.uploadImage(formData);
-            sendMessage('', response.imageUrl);
-        } catch (error) {
+            sendMessage('', { id: response.imageId, previewUrl: response.imageUrl });
+        } catch (error: any) {
             console.error('Upload failed:', error);
-            alert('Échec de l\'envoi de l\'image');
+            Alert.alert('Image non envoyée', error?.message || 'Échec de l\'envoi de l\'image');
         } finally {
             setUploading(false);
         }
@@ -370,6 +379,7 @@ export default function Chat() {
                                                     source={{ uri: imageUrl }}
                                                     style={styles.messageImage}
                                                     resizeMode="cover"
+                                                    onError={refreshExpiredImages}
                                                 />
                                             </TouchableOpacity>
                                         )}

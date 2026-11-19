@@ -13,6 +13,7 @@ export class MemoryChatStore implements ChatStore {
     private blocks: { blockerId: string; blockedId: string }[] = [];
     private opened: OpenedConversation[] = [];
     private messages: StoredMessage[] = [];
+    private images = new Map<string, { ownerId: string | null; attached: boolean }>();
     private nextId = 1;
 
     addUser(user: SeedUser) {
@@ -28,6 +29,10 @@ export class MemoryChatStore implements ChatStore {
         this.messages.push(this.toStored(message));
     }
 
+    addImage(id: string, ownerId: string | null) {
+        this.images.set(id, { ownerId, attached: false });
+    }
+
     openedRecords() {
         return [...this.opened];
     }
@@ -37,7 +42,7 @@ export class MemoryChatStore implements ChatStore {
     }
 
     private toStored(message: NewMessage): StoredMessage {
-        return { ...message, id: `m${this.nextId++}`, isRead: false, deletedBySender: false, deletedByReceiver: false };
+        return { ...message, imageUrl: null, id: `m${this.nextId++}`, isRead: false, deletedBySender: false, deletedByReceiver: false };
     }
 
     async getUser(id: string): Promise<ChatUser | null> {
@@ -75,8 +80,13 @@ export class MemoryChatStore implements ChatStore {
         return this.opened.filter(o => o.openedById === userId && o.openedAt >= since).length;
     }
 
+    async findImage(id: string) {
+        return this.images.get(id) ?? null;
+    }
+
     async createMessage(message: NewMessage) {
         const stored = this.toStored(message);
+        if (message.imageId) this.images.get(message.imageId)!.attached = true;
         this.messages.push(stored);
         return stored;
     }

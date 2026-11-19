@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { moderation } from '../moderation';
+import { images } from '../images';
 import type { AuthedRequest } from '../auth/middleware';
 
 const serverError = (res: Response, error: unknown) => {
@@ -53,7 +54,7 @@ export const reportMessage = async (req: Request, res: Response) => {
 
 export const adminStats = async (_req: Request, res: Response) => {
     try {
-        res.json(await moderation.stats());
+        res.json({ ...(await moderation.stats()), ...(await images().stats()) });
     } catch (error) {
         serverError(res, error);
     }
@@ -62,7 +63,12 @@ export const adminStats = async (_req: Request, res: Response) => {
 export const adminListReports = async (req: Request, res: Response) => {
     try {
         const status = ['open', 'dismissed', 'suspended', 'all'].includes(String(req.query.status)) ? String(req.query.status) : 'open';
-        res.json(await moderation.listReports(status as 'open' | 'dismissed' | 'suspended' | 'all'));
+        const reports = await moderation.listReports(status as 'open' | 'dismissed' | 'suspended' | 'all');
+        // Administrators get a fresh link to a reported image, if it still exists.
+        res.json(await Promise.all(reports.map(async r => ({
+            ...r,
+            imageUrl: r.snapshot.message.imageId ? await images().urlFor(r.snapshot.message.imageId) : null,
+        }))));
     } catch (error) {
         serverError(res, error);
     }

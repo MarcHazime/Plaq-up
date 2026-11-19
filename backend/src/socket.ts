@@ -3,9 +3,11 @@ import { sendPushNotification } from './services/notificationService';
 import { authenticateSocket } from './auth/middleware';
 import { chatWith, DenyReason } from './chat';
 import { lookupAccount } from './auth';
+import { images } from './images';
 
 const DENIED: Record<DenyReason, string> = {
     empty: 'Message vide',
+    invalid_image: "Cette image n'est plus disponible, renvoyez-la",
     self: 'Vous ne pouvez pas vous écrire à vous-même',
     unknown_receiver: 'Destinataire introuvable',
     unknown_sender: 'Compte introuvable',
@@ -47,12 +49,12 @@ export const setupSocket = (io: Server) => {
             console.log(`User ${socket.id} joined room ${room}`);
         });
 
-        socket.on('send_message', async (data: { receiverId: string; content: string; tempId?: string; imageUrl?: string; relatedPlate?: string }) => {
-            const { receiverId, content, tempId, imageUrl, relatedPlate } = data;
+        socket.on('send_message', async (data: { receiverId: string; content: string; tempId?: string; imageId?: string; relatedPlate?: string }) => {
+            const { receiverId, content, tempId, imageId, relatedPlate } = data;
 
             try {
                 // identity comes from the token, never from the payload
-                const result = await chat.send({ senderId: userId, receiverId, content, imageUrl, relatedPlate });
+                const result = await chat.send({ senderId: userId, receiverId, content, imageId, relatedPlate });
 
                 if (!result.ok) {
                     socket.emit('message_error', { tempId, reason: result.reason, error: DENIED[result.reason] });
@@ -61,7 +63,8 @@ export const setupSocket = (io: Server) => {
 
                 // The tempId lets the sender's app swap its optimistic message for the saved one.
                 const room = [userId, receiverId].sort().join('_');
-                io.to(room).emit('receive_message', { ...result.message, tempId });
+                const imageUrl = result.message.imageId ? await images().urlFor(result.message.imageId) : result.message.imageUrl;
+                io.to(room).emit('receive_message', { ...result.message, imageUrl, tempId });
                 if (result.quota.level !== 'ok') socket.emit('quota_warning', result.quota);
             } catch (error) {
                 console.error('Error saving message:', error);

@@ -5,7 +5,8 @@ export interface StoredMessage {
     senderId: string;
     receiverId: string;
     content: string;
-    imageUrl: string | null;
+    imageUrl: string | null; // old-style path from before private images
+    imageId: string | null;
     relatedPlate: string | null;
     isRead: boolean;
     deletedBySender: boolean;
@@ -32,7 +33,7 @@ export interface NewMessage {
     senderId: string;
     receiverId: string;
     content: string;
-    imageUrl: string | null;
+    imageId: string | null;
     relatedPlate: string | null;
     createdAt: Date;
 }
@@ -47,6 +48,8 @@ export interface ChatStore {
     firstMessageBetween(a: string, b: string): Promise<{ senderId: string; createdAt: Date } | null>;
     countOpened(userId: string): Promise<number>;
     countOpenedBySince(userId: string, since: Date): Promise<number>;
+    /** An uploaded Image, and whether a Message already uses it. */
+    findImage(id: string): Promise<{ ownerId: string | null; attached: boolean } | null>;
     createMessage(message: NewMessage): Promise<StoredMessage>;
     /** Every message between two users, in both directions, oldest first, deleted ones included. */
     messagesBetween(a: string, b: string): Promise<StoredMessage[]>;
@@ -59,6 +62,7 @@ export interface ChatStore {
 
 export type DenyReason =
     | 'empty'
+    | 'invalid_image'
     | 'self'
     | 'unknown_receiver'
     | 'unknown_sender'
@@ -84,7 +88,8 @@ export interface SendInput {
     senderId: string;
     receiverId: string;
     content?: string | null;
-    imageUrl?: string | null;
+    /** An Image the sender uploaded and has not used yet. */
+    imageId?: string | null;
     relatedPlate?: string | null;
 }
 
