@@ -11,3 +11,13 @@
 **Conversation**: all Messages exchanged between one pair of Users, whatever Plate they relate to.
 
 **Block**: one User preventing another from sending them Messages.
+
+**Report**: a User's complaint about a Message. It keeps a frozen copy of that Message and its recent context, and waits for an Administrator's decision (dismissed, or Suspension of the reported User).
+
+**Suspension**: the state of a User whom an Administrator has blocked. A suspended User cannot sign in or send Messages until the Suspension is lifted.
+
+**Administrator**: the person who reviews Reports and suspends or reinstates Users.
+
+**Pseudo**: an optional name a User chooses. Other Users see it instead of the Plate. It is not unique and identifies nobody.
+
+**Free quota**: the number of Conversations (20) a User may open without a subscription. Every Conversation counts, including those opened by someone else, and deleting one does not give the slot back. The limit only stops a User from opening new Conversations: reading and replying are never blocked. The User is warned as the limit approaches.
