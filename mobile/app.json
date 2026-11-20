@@ -15,10 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "Plaq'Up utilise l'appareil photo pour scanner les plaques et prendre des photos à envoyer.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Plaq'Up accède à vos photos pour que vous puissiez en envoyer dans une conversation."
       },
-      "bundleIdentifier": "com.anonymous.plaqup"
+      "bundleIdentifier": "fr.plaqup.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,12 +28,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true,
+      "usesCleartextTraffic": false,
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ],
-      "package": "com.anonymous.plaqup",
+      "package": "fr.plaqup.app",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
