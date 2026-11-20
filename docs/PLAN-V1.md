@@ -21,6 +21,10 @@ Vocabulaire : voir [GLOSSARY.md](../GLOSSARY.md). Ce document décrit des décis
 | Abonnement | 2,99 €/mois sans engagement, **après** la v1 (v1.1). La v1 compte les conversations mais ne bloque pas |
 | Paiements | RevenueCat, mis en place seulement au moment de l'abonnement |
 | Publicité ciblée | Plus tard, avec consentement RGPD explicite. Ne rien promettre qui l'interdise dans la politique de confidentialité |
+| Carnet du véhicule | Fonction d'appel utile sans autres utilisateurs. Échéances **contrôle technique, assurance, entretien, autre** par véhicule, rappels à 30 jours, 7 jours et le jour même à 9 h (notifications locales). Bouton « Fait » proposant la date suivante (CT +2 ans, assurance +1 an, entretien +1 an). Calcul du CT à partir de la date de première mise en circulation (champ facultatif, date toujours corrigeable). Données **sur le téléphone seulement**. Onglet « Carnet ». Autorisation des notifications demandée à la première échéance |
+| Garer ici | Dans l'onglet Carnet : enregistre la position (autorisation « pendant l'utilisation » seulement), un seul emplacement, sur le téléphone, itinéraire à pied vers l'emplacement |
+| Plaque sans compte | Message d'aide (« ce conducteur n'est pas encore sur Plaq'Up ») avec bouton de partage du lien d'installation. Le QR sur pare-brise viendra après la v1 |
+| Distribution | Premiers testeurs Android par lien APK, iPhone par TestFlight dès que le compte Apple est actif. Test fermé Google : viser 12 testeurs. Lancement dans la résidence et le quartier du propriétaire. Lien unique `/app` servi par le backend, qui sert aussi de page de présentation (liens légaux, contact) |
 | Statut | Micro-entreprise avant la publication. Note : sur Apple, une micro-entreprise s'affiche au nom de la personne. Une société (D-U-N-S) serait nécessaire pour afficher « Plaq'Up » |
 
 ## Chantiers, dans l'ordre
@@ -57,6 +61,13 @@ Vocabulaire : voir [GLOSSARY.md](../GLOSSARY.md). Ce document décrit des décis
 - La page d'administration affiche le stockage utilisé et le nombre d'images.
 - Alerte de facturation à activer côté Cloudflare.
 - Fini quand : une image n'est plus lisible sans jeton valide, survit à un déploiement, et les plafonds refusent l'envoi avec un message clair.
+
+### 4 bis. Carnet du véhicule, « Garer ici » et distribution
+- Module Carnet dans l'app (échéances, rappels, calcul du CT), testé sans téléphone : stockage et notifications derrière deux adaptateurs (réels et de test).
+- Onglet Carnet, saisie, bouton « Fait », « Garer ici ».
+- Message d'aide quand une plaque n'a pas de compte, avec partage du lien.
+- Page `/app` : présentation, installation (vers le bon magasin), liens légaux.
+- Fini quand : tests du calcul des dates et des rappels, parcours ajouter / voir / marquer fait sur un téléphone, `/app` répond.
 
 ### 5. Suivi et sauvegardes
 - Sentry dans le backend et dans l'app.

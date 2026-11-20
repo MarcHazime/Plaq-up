@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Modal, Image, Share } from 'react-native';
+import { INSTALL_URL } from '../../constants/legal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ export default function Search() {
     const [vehicle, setVehicle] = useState<any>(null); // Renamed from result
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null); // Changed type to allow null
+    const [notRegistered, setNotRegistered] = useState<string | null>(null); // plate searched without an account
     const router = useRouter();
 
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -49,6 +51,7 @@ export default function Search() {
 
         setLoading(true);
         setError(null);
+        setNotRegistered(null);
         setVehicle(null);
         try {
             // Use getVehicleInfo instead of searchUser
@@ -58,7 +61,7 @@ export default function Search() {
                 setResultPlate(plate); // Lock the displayed plate
                 saveRecentSearch(plate);
             } else {
-                setError('Véhicule non trouvé');
+                setNotRegistered(plate);
             }
         } catch (err: any) {
             setError(err.message || 'Échec de la récupération des infos');
@@ -123,6 +126,26 @@ export default function Search() {
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
+
+                    {notRegistered ? (
+                        <View style={styles.errorContainer}>
+                            <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>Ce conducteur n'est pas encore sur Plaq'Up</Text>
+                                <Text style={{ color: COLORS.textSecondary, marginTop: 4 }}>
+                                    Invitez-le à installer l'application : il pourra alors recevoir votre message.
+                                </Text>
+                                <TouchableOpacity
+                                    style={{ marginTop: 8, alignSelf: 'flex-start', backgroundColor: COLORS.primary, borderRadius: RADIUS.m, paddingHorizontal: 16, paddingVertical: 10 }}
+                                    onPress={() => Share.share({
+                                        message: `Je voulais te contacter au sujet de ta voiture (${notRegistered}). Installe Plaq'Up pour recevoir mon message : ${INSTALL_URL}`,
+                                    })}
+                                >
+                                    <Text style={{ color: COLORS.surface, fontWeight: 'bold' }}>Partager le lien d'installation</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : null}
 
                     {error ? (
                         <View style={styles.errorContainer}>

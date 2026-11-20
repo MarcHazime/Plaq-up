@@ -254,6 +254,7 @@ export const api = {
 
     async getVehicleInfo(plate: string) {
         const response = await authFetch(`${BASE_URL}/siv/${Plate.forUrl(plate)}`);
+        if (response.status === 404) return null; // no account for this plate
         if (!response.ok) {
             throw new Error('Failed to fetch vehicle info');
         }

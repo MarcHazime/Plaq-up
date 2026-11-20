@@ -91,6 +91,13 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
+                name="carnet"
+                options={{
+                    title: 'Carnet',
+                    tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     title: 'Profil',

@@ -1,0 +1,4 @@
+.lead{font-size:1.15rem}
+.buttons{display:flex;flex-direction:column;gap:12px;margin:2rem 0}
+.btn{display:block;text-align:center;padding:14px 18px;border-radius:12px;background:#f97316;color:#fff;font-weight:700;text-decoration:none}
+.btn.off{background:#e5e7eb;color:#6b7280}

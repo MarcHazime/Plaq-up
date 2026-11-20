@@ -60,3 +60,12 @@ pg_dump "$DATABASE_PUBLIC_URL" --format=custom --file=plaqup-$(date +%F).dump
 ```
 
 - Restauration : `pg_restore --clean --no-owner -d "$URL_CIBLE" plaqup-AAAA-MM-JJ.dump`. Essayer une fois sur une base jetable avant d'en avoir besoin.
+
+## Page d'installation `/app`
+
+`https://plaqu-up-production.up.railway.app/app` présente l'app et propose l'installation. Variables Railway (adresses `https://` seulement ; vide = « bientôt disponible ») :
+
+- `ANDROID_INSTALL_URL` : lien du test (EAS) puis fiche Google Play.
+- `IOS_INSTALL_URL` : invitation TestFlight puis fiche App Store.
+
+C'est l'adresse partagée par le bouton « Partager le lien d'installation » de l'app (`mobile/constants/legal.ts`). Elle pourra être redirigée depuis plaq-up.fr.

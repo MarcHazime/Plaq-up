@@ -20,6 +20,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { setupSocket } from './socket';
+import { installPage } from './install';
 
 import path from 'path';
 
@@ -67,6 +68,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 
 // Legal pages (privacy policy, terms, account deletion): static, public, linked from the app and the stores.
+app.get('/app', installPage);
 app.use('/legal', express.static(path.join(__dirname, '..', 'public', 'legal')));
 
 app.get('/', (req, res) => {

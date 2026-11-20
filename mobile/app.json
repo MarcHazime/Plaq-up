@@ -59,6 +59,12 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Plaq'Up utilise votre position uniquement pour enregistrer où vous avez garé votre voiture."
+        }
+      ],
       "expo-notifications",
       "@sentry/react-native"
     ],
