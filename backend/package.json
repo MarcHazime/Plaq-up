@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "npx prisma db push $PRISMA_PUSH_FLAGS && node dist/index.js",
+    "start": "node scripts/migrate.js && node dist/index.js",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:check": "prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url $SHADOW_DATABASE_URL --exit-code",
     "postinstall": "prisma generate",
     "test": "vitest run"
   },

@@ -33,11 +33,26 @@ Plafonds (fichier `backend/src/images/images.ts`) : 2 Mo par image, 20 envois pa
 
 Une image jamais envoyée dans un message est supprimée du bucket après 24 h, ainsi que celles d'un compte supprimé.
 
-## Quand un déploiement plante sur « There might be data loss »
+## Changer la base de données (migrations)
 
-Au démarrage, le serveur applique le schéma avec `prisma db push`. Si Prisma estime qu'un changement peut perdre des données (par exemple une contrainte d'unicité ajoutée), il refuse et le déploiement plante. Lisez l'avertissement : s'il porte sur une colonne neuve, sans doublon possible, il est sans danger.
+Le schéma évolue par **migrations versionnées** (`backend/prisma/migrations/`), fichiers SQL relus avant d'être appliqués. Au démarrage, le serveur lance `scripts/migrate.js`, qui applique celles qui manquent. Plus de `prisma db push`, donc plus de changement appliqué sans relecture.
 
-Pour l'accepter une seule fois : ajoutez dans les variables du service backend `PRISMA_PUSH_FLAGS` = `--accept-data-loss`, laissez Railway redéployer, puis **supprimez la variable**. Elle n'est volontairement pas permanente, pour qu'une vraie suppression de colonne ne passe jamais sans que vous le décidiez.
+Pour modifier le schéma, en local, sur une base jetable :
+
+```bash
+cd backend
+# 1. modifier prisma/schema.prisma
+# 2. générer la migration et la lire
+DATABASE_URL=postgresql://<vous>@localhost:5432/plaqup_dev npx prisma migrate dev --name ce_que_ca_fait
+# 3. vérifier que les migrations et le schéma concordent (base fantôme jetable)
+npm run migrate:check
+```
+
+Relisez le fichier `migration.sql` créé : un `DROP COLUMN` ou `DROP TABLE` supprime des données en production. Commitez le dossier de migration avec le changement de code ; le déploiement l'applique.
+
+Cas particulier, une seule fois : la base de production a été créée avec `db push`, sans historique. Au premier démarrage, `scripts/migrate.js` le détecte (Prisma répond P3005), enregistre la migration de base `20261120000000_baseline` comme déjà appliquée, puis continue. Les Deploy Logs affichent `recording 20261120000000_baseline as applied`. La variable `PRISMA_PUSH_FLAGS` n'est plus utilisée.
+
+Une migration qui échoue fait planter le déploiement : Railway garde l'ancienne version en ligne tant que la nouvelle ne démarre pas. Lisez l'erreur dans les Deploy Logs.
 
 ## Suivi des erreurs (Sentry)
 
