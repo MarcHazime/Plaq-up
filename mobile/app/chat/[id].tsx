@@ -1,8 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { socket } from '../../services/socket';
+import { useChatThread } from '../../hooks/useChatThread';
 import { api } from '../../services/api';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,112 +17,22 @@ export default function Chat() {
     const relatedPlate = params.relatedPlate;
 
     const { user } = useAuth();
-    const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
-    const [partnerPlate, setPartnerPlate] = useState('');
     const [uploading, setUploading] = useState(false);
-    const [isBlockedByMe, setIsBlockedByMe] = useState(false);
-    const [isBlockedByPartner, setIsBlockedByPartner] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const router = useRouter();
+
+    const { messages, partnerName: partnerPlate, isBlockedByMe, isBlockedByPartner, setIsBlockedByMe, reload: loadHistory, addPending } = useChatThread({
+        userId: user?.id,
+        partnerId: id,
+        relatedPlate,
+        onChanged: animated => setTimeout(() => flatListRef.current?.scrollToEnd({ animated }), 100),
+    });
 
     // Image Zoom State
     const [isImageViewVisible, setIsImageViewVisible] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imageUrls, setImageUrls] = useState<{ uri: string }[]>([]);
-
-    useEffect(() => {
-        if (!id || !user) return;
-
-        // Fetch partner details (just for display name?)
-        // Actually, if we are discussing relatedPlate, maybe we show relatedPlate as title?
-        // Or "Discussion avec [User] à propos de [Plate]".
-
-        const fetchPartner = async () => {
-            try {
-                const partner = await api.getUserById(id);
-                // If relatedPlate is set, we might prioritize that in title
-                setPartnerPlate(partner.displayName || 'Utilisateur');
-            } catch (error) {
-                console.error('Error fetching partner:', error);
-                setPartnerPlate('Utilisateur');
-            }
-        };
-
-        // ... (Block check same)
-        const checkBlock = async () => {
-            try {
-                const status = await api.getBlockStatus(user.id, id);
-                setIsBlockedByMe(status.blockedByMe);
-                setIsBlockedByPartner(status.blockedByOther);
-            } catch (error) {
-                console.error('Error checking block status:', error);
-            }
-        };
-
-        fetchPartner();
-        checkBlock();
-
-        // Connect socket
-        socket.connect();
-        const room = [user.id, id].sort().join('_');
-        socket.emit('join_chat', room);
-
-        // Load history
-        loadHistory();
-
-        // Listen for messages
-        socket.on('receive_message', (message) => {
-            // Filter: Only show if it matches relatedPlate or if general
-            // Filter removed to show unified conversation
-            // if (relatedPlate && message.relatedPlate && message.relatedPlate !== relatedPlate) {
-            //     return;
-            // }
-
-            setMessages((prev) => {
-                const exists = prev.some(m => m.id === message.id || (m.tempId && m.tempId === message.tempId));
-                if (exists) return prev;
-                return [...prev, message];
-            });
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-        });
-
-        socket.on('message_error', (data) => {
-            // The optimistic message was refused: take it back and tell the user why.
-            if (data.tempId) setMessages((prev) => prev.filter(m => m.tempId !== data.tempId));
-            Alert.alert("Message non envoyé", data.error || "Une erreur est survenue");
-        });
-
-        socket.on('quota_warning', (quota: { used: number; limit: number; level: string }) => {
-            Alert.alert(
-                quota.level === 'reached' ? "Limite atteinte" : "Bientôt la limite",
-                `Vous avez utilisé ${quota.used} conversations sur ${quota.limit}.`
-            );
-        });
-
-        return () => {
-            socket.off('receive_message');
-            socket.off('message_error');
-            socket.off('quota_warning');
-            socket.disconnect();
-        };
-    }, [id, user, relatedPlate]);
-
-    const loadHistory = async () => {
-        if (!user || !id) return;
-        try {
-            const history = await api.getChatHistory(user.id, id, relatedPlate);
-            setMessages(history);
-
-            // Mark as read
-            await api.markMessagesAsRead(user.id, id);
-
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
 
     const handleOptions = () => {
         Alert.alert(
@@ -232,8 +143,7 @@ export default function Chat() {
             createdAt: new Date().toISOString()
         };
 
-        setMessages((prev) => [...prev, message]);
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        addPending(message);
 
         socket.emit('send_message', message);
         setInput('');

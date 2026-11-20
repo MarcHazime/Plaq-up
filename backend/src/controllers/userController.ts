@@ -64,7 +64,12 @@ export const getSettings = async (req: Request, res: Response) => {
     try {
         const user = await accountStore.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-        res.json({ email: user.email, pseudo: user.pseudo, acceptNewContacts: user.acceptNewContacts });
+        res.json({
+            email: user.email,
+            pseudo: user.pseudo,
+            acceptNewContacts: user.acceptNewContacts,
+            termsAccepted: await account().hasAcceptedCurrentTerms(user.id),
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
@@ -279,5 +284,15 @@ export const getBlockStatus = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error fetching block status' });
+    }
+};
+
+export const acceptTerms = async (req: Request, res: Response) => {
+    try {
+        if (!(await account().acceptTerms(req.params.id))) return res.status(404).json({ error: 'Utilisateur introuvable' });
+        res.json({ message: 'Conditions acceptées' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 };

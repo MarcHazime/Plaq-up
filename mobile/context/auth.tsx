@@ -19,12 +19,15 @@ type AuthContextType = {
     user: User | null;
     signIn: (user: User) => void;
     signOut: () => void;
+    /** Records the acceptance of the current Terms, then lets the user in. */
+    acceptTerms: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     signIn: () => { },
     signOut: () => { },
+    acceptTerms: async () => { },
 });
 
 export function useAuth() {
@@ -34,9 +37,25 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    // True when the account has not accepted the current Terms. Unknown or offline counts as accepted.
+    const [needsTerms, setNeedsTerms] = useState(false);
     const router = useRouter();
     const segments = useSegments();
     const navigationState = useRootNavigationState();
+
+    const checkTerms = (userId: string) => {
+        api.getSettings(userId).then(
+            settings => setNeedsTerms(!settings.termsAccepted),
+            () => setNeedsTerms(false)
+        );
+    };
+
+    const acceptTerms = async () => {
+        if (!user) return;
+        await api.acceptTerms(user.id);
+        setNeedsTerms(false);
+        router.replace('/(tabs)/search');
+    };
 
     useEffect(() => {
         const loadSession = async () => {
@@ -52,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (parsed.token) {
                         setAuthToken(parsed.token);
                         setUser(parsed);
+                        checkTerms(parsed.id);
                     } else {
                         await SecureStore.deleteItemAsync('user');
                     }
@@ -72,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setAuthToken(userData.token ?? null);
         setUser(userData);
+        checkTerms(userData.id);
         if (Platform.OS !== 'web') {
             SecureStore.setItemAsync('user', JSON.stringify(userData)).catch(console.error);
 
@@ -92,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signOut = () => {
         setAuthToken(null);
         setUser(null);
+        setNeedsTerms(false);
         if (Platform.OS !== 'web') {
             SecureStore.deleteItemAsync('user').catch(console.error);
         }
@@ -111,13 +133,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!user && !inAuthGroup) {
             router.replace('/(auth)/login');
-        } else if (user && inAuthGroup) {
+        } else if (user && needsTerms) {
+            if (segments[0] !== 'terms') router.replace('/terms');
+        } else if (user && (inAuthGroup || segments[0] === 'terms')) {
             router.replace('/(tabs)/search');
         }
-    }, [user, segments, navigationState?.key, isLoading]);
+    }, [user, needsTerms, segments, navigationState?.key, isLoading]);
 
     return (
-        <AuthContext.Provider value={{ user, signIn, signOut }}>
+        <AuthContext.Provider value={{ user, signIn, signOut, acceptTerms }}>
             {!isLoading && children}
         </AuthContext.Provider>
     );

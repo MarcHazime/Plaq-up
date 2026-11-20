@@ -266,3 +266,26 @@ describe('deleteAccount', () => {
         expect((await s.account.register(signup)).ok).toBe(true);
     });
 });
+
+describe('terms update', () => {
+    it('an account from before the terms must accept; accepting records the current version', async () => {
+        const s = setup();
+        const r = await verifiedUser(s);
+        // account created before the Terms existed
+        Object.assign(s.store.users.get(r.userId)!, { termsAcceptedAt: null, termsVersion: null });
+        expect(await s.account.hasAcceptedCurrentTerms(r.userId)).toBe(false);
+
+        expect(await s.account.acceptTerms(r.userId)).toBe(true);
+
+        expect(await s.account.hasAcceptedCurrentTerms(r.userId)).toBe(true);
+        expect(s.store.users.get(r.userId)).toMatchObject({ termsAcceptedAt: new Date('2026-01-10T10:00:00Z'), termsVersion: TERMS_VERSION });
+    });
+
+    it('a new signup has already accepted, and an unknown user cannot', async () => {
+        const s = setup();
+        const r = await verifiedUser(s);
+        expect(await s.account.hasAcceptedCurrentTerms(r.userId)).toBe(true);
+        expect(await s.account.acceptTerms('ghost')).toBe(false);
+        expect(await s.account.hasAcceptedCurrentTerms('ghost')).toBe(false);
+    });
+});

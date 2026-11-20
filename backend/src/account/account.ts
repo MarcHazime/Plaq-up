@@ -32,6 +32,10 @@ export interface Account {
     updateSettings(userId: string, settings: { pseudo?: string | null; acceptNewContacts?: boolean }): Promise<SettingsResult>;
     /** Removes the User and everything about them. Their Messages go, in both directions. */
     deleteAccount(userId: string): Promise<void>;
+    /** Records that the User accepted the current Terms. False when the User does not exist. */
+    acceptTerms(userId: string): Promise<boolean>;
+    /** Whether the User accepted the current version of the Terms (accounts older than the Terms have not). */
+    hasAcceptedCurrentTerms(userId: string): Promise<boolean>;
 }
 
 export interface AccountDeps {
@@ -206,5 +210,15 @@ export function createAccount({
         },
 
         deleteAccount: userId => store.delete(userId),
+
+        async acceptTerms(userId) {
+            if (!(await store.findById(userId))) return false;
+            await store.update(userId, { termsAcceptedAt: now(), termsVersion: TERMS_VERSION });
+            return true;
+        },
+
+        async hasAcceptedCurrentTerms(userId) {
+            return (await store.findById(userId))?.termsVersion === TERMS_VERSION;
+        },
     };
 }

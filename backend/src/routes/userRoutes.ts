@@ -16,6 +16,7 @@ router.get('/search', UserController.searchUser); // ?plate=AA-123-BB
 router.get('/:id/settings', requireSelf('id'), UserController.getSettings);
 router.get('/:id', getUserById);
 router.put('/:id', requireSelf('id'), updateUser);
+router.post('/:id/accept-terms', requireSelf('id'), UserController.acceptTerms);
 router.put('/:id/push-token', requireSelf('id'), updatePushToken);
 router.post('/block', requireSelfInBody('blockerId'), blockUser);
 router.post('/unblock', requireSelfInBody('blockerId'), unblockUser);

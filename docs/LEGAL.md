@@ -12,7 +12,7 @@ Les pages sont dans `backend/public/legal/` et servies à `/legal/` (lien dans l
 - Dès qu'un hébergeur ou prestataire change (ex. Sentry désactivé, publicité), mettre à jour la liste des destinataires.
 
 ## Quand les textes changent
-Changer `TERMS_VERSION` dans `backend/src/account/terms.ts`. Chaque compte garde la date et la version acceptées. Redemander l'acceptation aux comptes existants n'est pas encore codé.
+Changer `TERMS_VERSION` dans `backend/src/account/terms.ts`. Chaque compte garde la date et la version acceptées. Au prochain lancement, tout compte qui n'a pas accepté cette version voit un écran bloquant (`mobile/app/terms.tsx`) : « J'accepte » ou déconnexion. Les comptes créés avant les conditions y passent aussi. Hors ligne, l'écran n'apparaît pas.
 
 ## Pour les magasins
 Adresses à renseigner : politique de confidentialité = `/legal/privacy.html`, suppression de compte = `/legal/delete-account.html`. À terme, recopier les pages sur plaq-up.fr et changer `LEGAL_ORIGIN`.

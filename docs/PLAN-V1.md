@@ -88,4 +88,4 @@ Vocabulaire : voir [GLOSSARY.md](../GLOSSARY.md). Ce document décrit des décis
 - Publicités ciblées (contrôles techniques, réductions), après consentement RGPD.
 
 ## Mobile
-Le refactor mobile (phase 6 : client de requêtes commun, hooks de session et de chat) avance avec chaque écran touché : pseudo, signalement, avertissement de quota.
+Phase 6 faite : un client de requêtes commun (`services/http.ts`, `services/api.ts` réduit à une ligne par appel), les règles de la liste de messages (`chat/thread.ts`, testées) et un hook pour la conversation (`hooks/useChatThread.ts`). La session reste dans `context/auth.tsx`, qui gère aussi l'acceptation des conditions. Les écrans Carnet, Profil et Discussions gardent leur logique locale pour l'instant.
