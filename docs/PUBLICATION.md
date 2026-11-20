@@ -18,8 +18,14 @@ Légende : 👤 vous seul pouvez le faire · 🤖 je le fais dans le code · ⏱
    - **iOS** : clé APNs pour les notifications, créée par EAS lors du premier build iOS (`npx eas-cli credentials`, il demande votre compte Apple Developer).
    - Les testeurs actuels devront désinstaller l'ancienne appli : l'ancienne et la nouvelle sont deux applis distinctes.
 8. 🤖 **Nettoyage de la configuration** : ✅ permission `RECORD_AUDIO` retirée, `usesCleartextTraffic` à `false`, textes d'autorisation caméra et photothèque en français. Reste à vérifier : icône et écran de lancement définitifs (icône 1024×1024 sans transparence pour Apple), nom technique `vigiplaque` (invisible des utilisateurs). Note : un build « development » ne peut plus parler à un serveur local en HTTP.
-9. 🤖 **Builds de production** : `eas build --profile production` pour les deux plateformes, puis `eas submit`. Je prépare `eas.json`. 👤 Il faudra vous connecter à vos comptes Apple et Google lors du premier envoi.
-10. 🤖 **Compte de démonstration pour la revue** : un compte vérifié avec une plaque fictive et une conversation exemple, pour qu'Apple et Google puissent tester sans inscription. 👤 Vous gardez son mot de passe pour les formulaires.
+9. **Builds de production** : `eas.json` est prêt (`production` : bundle Android signé, version incrémentée automatiquement). 👤 `eas build --profile production --platform all`, puis `eas submit`. Il faudra vous connecter à vos comptes Apple et Google lors du premier envoi.
+10. ✅ **Compte de démonstration** : `backend/scripts/seedDemo.ts` crée un compte vérifié (plaque fictive `ZZ-100-ZZ`) avec une conversation, et un compte « voisin » (`ZZ-200-ZZ`) pour tester l'envoi. 👤 À lancer une fois contre la base de production, avec l'adresse **publique** de la base (service Postgres → Variables → `DATABASE_PUBLIC_URL`) :
+
+   ```bash
+   cd backend && DATABASE_URL='<DATABASE_PUBLIC_URL>' npx ts-node scripts/seedDemo.ts
+   ```
+
+   Le mot de passe est généré et affiché une seule fois : notez-le pour les formulaires de revue (Apple « Informations de connexion », Google « Accès à l'application »). Relancer le script le remplace.
 11. 🤖 Variables de production : `SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_DSN`, `SMTP_FROM` (déjà fait), retrait de `PRISMA_PUSH_FLAGS` (déjà fait).
 
 ## C. Contenu des fiches (👤 je rédige les textes avec vous)
