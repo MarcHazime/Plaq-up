@@ -1,4 +1,5 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, FlatList, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, FlatList, Switch, Linking } from 'react-native';
+import { LEGAL_URLS } from '../../constants/legal';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/auth';
 import { api } from '../../services/api';
@@ -276,6 +277,12 @@ export default function Profile() {
                     >
                         <Text style={styles.deleteButtonText}>Supprimer mon compte</Text>
                     </TouchableOpacity>
+
+                    <View style={styles.legalLinks}>
+                        <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>Conditions d'utilisation</Text>
+                        <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>Confidentialité</Text>
+                        <Text style={styles.legalLink} onPress={() => Linking.openURL('mailto:contact@plaq-up.fr')}>Contact</Text>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -283,6 +290,16 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+    legalLinks: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: SPACING.l,
+    },
+    legalLink: {
+        color: COLORS.textSecondary,
+        fontSize: 13,
+        textDecorationLine: 'underline',
+    },
     switchRow: {
         flexDirection: 'row',
         alignItems: 'center',

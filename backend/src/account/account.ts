@@ -3,6 +3,7 @@ import * as Plate from '../domain/plate';
 import type { Mailer } from '../mailer';
 import { passwordProblem } from './password';
 import { normalizePseudo } from './pseudo';
+import { TERMS_VERSION } from './terms';
 import type {
     AccountStore,
     AccountUser,
@@ -21,7 +22,7 @@ const VERIFICATION_TTL = 24 * HOUR;
 const RESET_TTL = HOUR;
 
 export interface Account {
-    register(input: { plate: unknown; password: unknown; email: unknown }): Promise<RegisterResult>;
+    register(input: { plate: unknown; password: unknown; email: unknown; acceptTerms: unknown }): Promise<RegisterResult>;
     verifyEmail(userId: string, code: string): Promise<VerifyResult>;
     resendCode(userId: string): Promise<ResendResult>;
     login(input: { plate: unknown; password: unknown }): Promise<LoginResult>;
@@ -65,7 +66,8 @@ export function createAccount({
     }
 
     return {
-        async register({ plate: rawPlate, password, email: rawEmail }) {
+        async register({ plate: rawPlate, password, email: rawEmail, acceptTerms }) {
+            if (acceptTerms !== true) return { ok: false, reason: 'terms_not_accepted' };
             const plate = typeof rawPlate === 'string' ? Plate.parse(rawPlate) : null;
             if (!plate) return { ok: false, reason: 'invalid_plate' };
             if (passwordProblem(password)) return { ok: false, reason: 'weak_password' };
@@ -88,6 +90,8 @@ export function createAccount({
                 plate,
                 verificationToken: code,
                 verificationExpires: new Date(now().getTime() + VERIFICATION_TTL),
+                termsAcceptedAt: now(),
+                termsVersion: TERMS_VERSION,
             });
 
             try {

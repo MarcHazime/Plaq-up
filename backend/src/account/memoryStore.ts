@@ -32,6 +32,8 @@ export class MemoryAccountStore implements AccountStore {
             pseudo: null,
             acceptNewContacts: true,
             suspended: false,
+            termsAcceptedAt: account.termsAcceptedAt,
+            termsVersion: account.termsVersion,
         };
         this.users.set(user.id, user);
         this.vehicles.push({ plate: account.plate, userId: user.id });

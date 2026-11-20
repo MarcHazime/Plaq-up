@@ -21,6 +21,8 @@ model User {
   isAdmin           Boolean   @default(false)
   pseudo            String?
   acceptNewContacts Boolean   @default(true)
+  termsAcceptedAt   DateTime?
+  termsVersion      String?
 
   isVerified        Boolean   @default(false)
   verificationToken String?

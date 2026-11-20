@@ -1,4 +1,5 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, Linking } from 'react-native';
+import { LEGAL_URLS } from '../../constants/legal';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '../../context/auth';
@@ -16,6 +17,7 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [acceptTerms, setAcceptTerms] = useState(false);
 
     const handleRegister = async () => {
         try {
@@ -24,7 +26,11 @@ export default function Register() {
                 setError('Email requis pour la vérification');
                 return;
             }
-            const response = await api.register(plate, password, email);
+            if (!acceptTerms) {
+                setError("Acceptez les conditions d'utilisation et la politique de confidentialité");
+                return;
+            }
+            const response = await api.register(plate, password, email, acceptTerms);
             if (response.requiresVerification) {
                 router.push({
                     pathname: '/(auth)/verify-email',
@@ -99,6 +105,25 @@ export default function Register() {
                                 secureTextEntry
                             />
                         </View>
+
+                        <TouchableOpacity
+                            style={styles.termsRow}
+                            onPress={() => setAcceptTerms(v => !v)}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: acceptTerms }}
+                        >
+                            <Ionicons
+                                name={acceptTerms ? 'checkbox' : 'square-outline'}
+                                size={24}
+                                color={acceptTerms ? COLORS.primary : COLORS.textSecondary}
+                            />
+                            <Text style={styles.termsText}>
+                                {"J'accepte les "}
+                                <Text style={styles.link} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>conditions d'utilisation</Text>
+                                {' et la '}
+                                <Text style={styles.link} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>politique de confidentialité</Text>
+                            </Text>
+                        </TouchableOpacity>
 
                         <TouchableOpacity style={styles.button} onPress={handleRegister}>
                             <LinearGradient
@@ -205,6 +230,17 @@ const styles = StyleSheet.create({
         color: COLORS.surface,
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    termsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING.m,
+    },
+    termsText: {
+        flex: 1,
+        marginLeft: SPACING.s,
+        color: COLORS.textSecondary,
+        fontSize: 14,
     },
     errorContainer: {
         backgroundColor: '#FEF2F2',

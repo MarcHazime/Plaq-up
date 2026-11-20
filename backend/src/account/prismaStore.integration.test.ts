@@ -29,7 +29,7 @@ describe.skipIf(!url)('Account on Postgres', () => {
     });
 
     it('registers, verifies, logs in and stores the pseudo', async () => {
-        const r = await account.register({ plate: 'AB-123-CD', password: 'password1', email: 'me@x.fr' });
+        const r = await account.register({ plate: 'AB-123-CD', password: 'password1', email: 'me@x.fr', acceptTerms: true });
         if (!r.ok) throw new Error(r.reason);
         const code = (await prisma.user.findUniqueOrThrow({ where: { id: r.userId } })).verificationToken!;
 
@@ -42,8 +42,8 @@ describe.skipIf(!url)('Account on Postgres', () => {
     });
 
     it('replaces an unverified account on a new registration', async () => {
-        await account.register({ plate: 'AB-123-CD', password: 'password1', email: 'me@x.fr' });
-        const again = await account.register({ plate: 'AB-123-CD', password: 'password2', email: 'me@x.fr' });
+        await account.register({ plate: 'AB-123-CD', password: 'password1', email: 'me@x.fr', acceptTerms: true });
+        const again = await account.register({ plate: 'AB-123-CD', password: 'password2', email: 'me@x.fr', acceptTerms: true });
         expect(again.ok).toBe(true);
         expect(await prisma.user.count()).toBe(1);
         expect(await prisma.vehicle.count()).toBe(1);
@@ -51,7 +51,7 @@ describe.skipIf(!url)('Account on Postgres', () => {
 
     it('deletes the account with its vehicles, messages in both directions, blocks and conversations', async () => {
         const mk = async (plate: string, email: string) => {
-            const r = await account.register({ plate, password: 'password1', email });
+            const r = await account.register({ plate, password: 'password1', email, acceptTerms: true });
             if (!r.ok) throw new Error(r.reason);
             return r.userId;
         };

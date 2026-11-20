@@ -14,13 +14,14 @@ const REGISTER_ERRORS = {
     invalid_email: 'Email requis pour la vérification',
     plate_taken: 'Plaque déjà enregistrée',
     email_taken: 'Email déjà enregistré',
+    terms_not_accepted: "Vous devez accepter les conditions d'utilisation et la politique de confidentialité",
     email_failed: "Impossible d'envoyer l'email de vérification. Réessayez plus tard.",
 } as const;
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { plate, password, email } = req.body;
-        const result = await account().register({ plate, password, email });
+        const { plate, password, email, acceptTerms } = req.body;
+        const result = await account().register({ plate, password, email, acceptTerms });
 
         if (!result.ok) {
             if (result.reason === 'email_failed') console.error('Registration email failed:', result.detail);

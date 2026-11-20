@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createAccount } from './account';
 import { MemoryAccountStore } from './memoryStore';
+import { TERMS_VERSION } from './terms';
 import type { Mailer } from '../mailer';
 
 const HOUR = 3600 * 1000;
@@ -27,7 +28,7 @@ function setup(options: { mailFails?: boolean } = {}) {
     return { store, account, sent, mailer, lastCode, advance: (ms: number) => { current = new Date(current.getTime() + ms); } };
 }
 
-const signup = { plate: 'ab123cd', password: 'password1', email: 'me@x.fr' };
+const signup = { plate: 'ab123cd', password: 'password1', email: 'me@x.fr', acceptTerms: true };
 
 async function verifiedUser(s: ReturnType<typeof setup>, over: Partial<typeof signup> = {}) {
     const r = await s.account.register({ ...signup, ...over });
@@ -55,6 +56,24 @@ describe('register', () => {
         expect(await account.register({ ...signup, email: '' })).toMatchObject({ ok: false, reason: 'invalid_email' });
         expect(store.users.size).toBe(0);
         expect(mailer.send).not.toHaveBeenCalled();
+    });
+
+    it('refuses signup unless the terms are accepted, and creates nothing', async () => {
+        const { account, store, mailer } = setup();
+        for (const acceptTerms of [undefined, false, 'true', 1]) {
+            expect(await account.register({ ...signup, acceptTerms })).toMatchObject({ ok: false, reason: 'terms_not_accepted' });
+        }
+        expect(store.users.size).toBe(0);
+        expect(mailer.send).not.toHaveBeenCalled();
+    });
+
+    it('records when and which version of the terms was accepted', async () => {
+        const { account, store } = setup();
+        await account.register(signup);
+        expect([...store.users.values()][0]).toMatchObject({
+            termsAcceptedAt: new Date('2026-01-10T10:00:00Z'),
+            termsVersion: TERMS_VERSION,
+        });
     });
 
     it('leaves no account behind when the email cannot be sent', async () => {

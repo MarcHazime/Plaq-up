@@ -13,6 +13,8 @@ const toAccountUser = (u: User): AccountUser => ({
     pseudo: u.pseudo,
     acceptNewContacts: u.acceptNewContacts,
     suspended: u.suspendedAt !== null,
+    termsAcceptedAt: u.termsAcceptedAt,
+    termsVersion: u.termsVersion,
 });
 
 export function createPrismaAccountStore(prisma: PrismaClient): AccountStore {
@@ -40,6 +42,8 @@ export function createPrismaAccountStore(prisma: PrismaClient): AccountStore {
                     isVerified: false,
                     verificationToken: account.verificationToken,
                     verificationExpires: account.verificationExpires,
+                    termsAcceptedAt: account.termsAcceptedAt,
+                    termsVersion: account.termsVersion,
                     vehicles: { create: { plate: account.plate, isPrimary: true } },
                 },
             });

@@ -10,6 +10,8 @@ export interface AccountUser {
     pseudo: string | null;
     acceptNewContacts: boolean;
     suspended: boolean;
+    termsAcceptedAt: Date | null;
+    termsVersion: string | null;
 }
 
 export type UserPatch = Partial<Omit<AccountUser, 'id' | 'suspended'>>;
@@ -20,6 +22,8 @@ export interface NewAccount {
     plate: string;
     verificationToken: string;
     verificationExpires: Date;
+    termsAcceptedAt: Date;
+    termsVersion: string;
 }
 
 /** The seam between the Account module and its storage. */
@@ -41,7 +45,7 @@ export interface Hasher {
 
 export type RegisterResult =
     | { ok: true; userId: string; email: string; primaryPlate: string }
-    | { ok: false; reason: 'invalid_plate' | 'weak_password' | 'invalid_email' | 'plate_taken' | 'email_taken' | 'email_failed'; detail?: string };
+    | { ok: false; reason: 'invalid_plate' | 'weak_password' | 'invalid_email' | 'plate_taken' | 'email_taken' | 'email_failed' | 'terms_not_accepted'; detail?: string };
 
 export type VerifyResult =
     | { ok: true; userId: string; email: string | null }

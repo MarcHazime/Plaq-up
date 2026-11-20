@@ -66,6 +66,9 @@ app.use('/api/admin', adminRoutes);
 // Administration page: static files, the data behind it needs an administrator token.
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 
+// Legal pages (privacy policy, terms, account deletion): static, public, linked from the app and the stores.
+app.use('/legal', express.static(path.join(__dirname, '..', 'public', 'legal')));
+
 app.get('/', (req, res) => {
     res.send('License Plate App API is running');
 });

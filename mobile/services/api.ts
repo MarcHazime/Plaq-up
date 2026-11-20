@@ -46,11 +46,11 @@ const authFetch = async (url: string, init: RequestInit = {}) => {
 };
 
 export const api = {
-    async register(plate: string, password: string, email: string) {
+    async register(plate: string, password: string, email: string, acceptTerms: boolean) {
         const response = await authFetch(`${BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plate, password, email }),
+            body: JSON.stringify({ plate, password, email, acceptTerms }),
         });
         if (!response.ok) {
             const error = await response.json();
