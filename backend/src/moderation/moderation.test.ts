@@ -174,3 +174,24 @@ describe('stats', () => {
         expect(s).toMatchObject({ users: 5, verifiedUsers: 4, suspendedUsers: 1, messages: 4, messagesLast24h: 4, openReports: 1 });
     });
 });
+
+describe('report events', () => {
+    it('notifies once the report is saved, and a failing handler does not fail the report', async () => {
+        const store = new MemoryModerationStore();
+        store.addUser({ id: 'me', plates: ['AA-111-AA'] });
+        store.addUser({ id: 'bob', plates: ['BB-222-BB'] });
+        store.addMessage({ id: 'm1', senderId: 'bob', receiverId: 'me', content: 'rude', createdAt: new Date('2026-01-10T11:00:00Z') });
+        const seen: string[] = [];
+        const moderation = createModeration({
+            store,
+            now: () => new Date('2026-01-10T12:00:00Z'),
+            events: { reportCreated: async r => { seen.push(r.messageId); throw new Error('mailer down'); } },
+        });
+
+        const r = await moderation.report({ reporterId: 'me', messageId: 'm1', reason: 'spam' });
+
+        expect(r.ok).toBe(true);
+        expect(seen).toEqual(['m1']);
+        expect(store.reports).toHaveLength(1);
+    });
+});

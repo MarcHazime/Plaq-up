@@ -29,12 +29,18 @@ export interface Moderation {
     stats(): Promise<Stats>;
 }
 
+export interface ModerationEvents {
+    /** Called after a Report is saved. Its failure never fails the report. */
+    reportCreated?(report: ReportRecord): Promise<void>;
+}
+
 export interface ModerationDeps {
     store: ModerationStore;
+    events?: ModerationEvents;
     now?: () => Date;
 }
 
-export function createModeration({ store, now = () => new Date() }: ModerationDeps): Moderation {
+export function createModeration({ store, events = {}, now = () => new Date() }: ModerationDeps): Moderation {
     const clean = (note?: string | null) => (note ?? '').trim().slice(0, NOTE_MAX) || null;
 
     return {
@@ -66,6 +72,11 @@ export function createModeration({ store, now = () => new Date() }: ModerationDe
                     reported: message.sender,
                 },
             });
+            try {
+                await events.reportCreated?.(record);
+            } catch (error) {
+                console.error('[moderation] reportCreated handler failed:', error);
+            }
             return { ok: true, reportId: record.id };
         },
 

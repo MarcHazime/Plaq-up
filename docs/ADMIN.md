@@ -84,3 +84,7 @@ pg_dump "$DATABASE_PUBLIC_URL" --format=custom --file=plaqup-$(date +%F).dump
 - `IOS_INSTALL_URL` : invitation TestFlight puis fiche App Store.
 
 C'est l'adresse partagée par le bouton « Partager le lien d'installation » de l'app (`mobile/constants/legal.ts`). Elle pourra être redirigée depuis plaq-up.fr.
+
+## Alerte à chaque signalement
+
+Dès qu'un message est signalé, un email part vers `REPORT_ALERT_EMAIL` (variable Railway ; à défaut, l'adresse d'expédition `SMTP_FROM`, soit contact@plaq-up.fr). Il donne le motif, le compte signalé (plaque ou pseudo) et le lien vers `/admin/`. Il ne contient pas le message : les preuves restent dans la page d'administration. Si l'envoi échoue, le signalement est quand même enregistré. Le lien vient de `PUBLIC_BASE_URL`, ou à défaut du domaine public de Railway.
